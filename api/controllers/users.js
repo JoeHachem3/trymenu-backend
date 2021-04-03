@@ -3,6 +3,28 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
+exports.getSimilarUsers = (req, res, next) => {
+  User.find({ _id: req.userData.userId })
+    .select('_id username first_name last_name email ratedItems')
+    .populate('ratedItems.item', '_id, name')
+    .exec()
+    .then((user) => {
+      const mainUser = user;
+      User.find({ _id: { $ne: req.userData.userId } })
+        .select('_id username first_name last_name email ratedItems')
+        .populate('ratedItems.item', '_id, name')
+        .exec()
+        .then((users) => {
+          //algorithm
+        });
+    })
+    .catch((error) => {
+      res.status(500).json({
+        error: error,
+      });
+    });
+};
+
 exports.getAllUsers = (req, res, next) => {
   User.find({ _id: { $ne: req.userData.userId } })
     .select('_id username first_name last_name email ratedItems')

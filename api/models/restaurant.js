@@ -6,10 +6,12 @@ const restaurantSchema = mongoose.Schema({
   name: { type: String, required: true, lowercase: true, trim: true },
   phone: { type: Number, required: true },
   email: { type: String, unique: true, required: true, trim: true },
-  location: {
-    XCoordinate: { type: Number, required: true, trim: true },
-    YCoordinate: { type: Number, required: true, trim: true },
-  },
+  location: [
+    {
+      XCoordinate: { type: Number, trim: true },
+      YCoordinate: { type: Number, trim: true },
+    },
+  ],
   category: {
     type: String,
     required: true,
