@@ -1,3 +1,4 @@
 # trymenu-backend
 
-## npm run dev (nodemon)
+### nodemon:
+ npm run dev
