@@ -13,7 +13,7 @@ const itemSchema = mongoose.Schema({
     type: String,
     default: undefined,
     lowercase: true,
-    trim: true /*required: true*/,
+    trim: true /*,required: true*/,
   },
   ingredients: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Ingredient' }],
 });
