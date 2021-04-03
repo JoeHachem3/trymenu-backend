@@ -13,11 +13,13 @@ const restaurantSchema = mongoose.Schema({
     },
   ],
   category: {
+    // Fast Food/Drive-thrus | Fast Casual | Sports Bar | Casual Dining | Fine Dining | Pop-up Restaurants | Food Trucks
     type: String,
     required: true,
     lowercase: true,
     trim: true,
   },
+
   menu: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Item' }],
 });
 
