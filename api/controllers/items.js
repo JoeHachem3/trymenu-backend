@@ -84,11 +84,7 @@ exports.updateItem = (req, res, next) => {
     .exec()
     .then(() => {
       res.status(200).json({
-        message: `Your ${Object.keys(updatedItem).join(
-          ', ',
-        )} got successfully updated to ${Object.values(updatedItem).join(
-          ', ',
-        )}`,
+        message: 'Your item got successfully updated',
         request: {
           type: 'GET',
           url: 'http://localhost:5000/items/' + id,

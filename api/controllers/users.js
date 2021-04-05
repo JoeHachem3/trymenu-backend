@@ -5,35 +5,67 @@ const jwt = require('jsonwebtoken');
 const collaborativeFiltering = require('../../algorithms/collaborativeFiltering');
 
 exports.updateRatings = (req, res, next) => {
-  if (req.body.rating > 5 || req.body.rating < 0) {
+  if (req.body.ratedItems.length === 0) {
     return res.status(401).json({
-      message: "We see you! but you can't... ",
+      message: 'okay..',
     });
   }
   User.findOne({ _id: req.userData.userId })
     .select('ratedItems averageRating')
     .exec()
     .then((user) => {
+      const ratedItems = req.body.ratedItems;
+      if (ratedItems[0].rating > 5 || ratedItems[0].rating < 0) {
+        return res.status(401).json({
+          message: "We see you! but you can't... ",
+        });
+      }
       if (user.ratedItems.length === 0) {
-        user.averageRating = req.body.rating;
-        user.ratedItems.push(req.body);
+        user.averageRating = ratedItems[0].rating;
+        user.ratedItems.push(ratedItems[0]);
       } else {
         let found = false;
         for (let i = 0; i < user.ratedItems.length; i++) {
           item = user.ratedItems[i];
-          if (item.item == req.body.item) {
+          if (item.item == ratedItems[0].item) {
             user.averageRating +=
-              (req.body.rating - item.rating) / user.ratedItems.length;
-            item.rating = req.body.rating;
+              (ratedItems[0].rating - item.rating) / user.ratedItems.length;
+            item.rating = ratedItems[0].rating;
             found = true;
             break;
           }
         }
         if (!found) {
           user.averageRating =
-            (user.averageRating * user.ratedItems.length + req.body.rating) /
+            (user.averageRating * user.ratedItems.length +
+              ratedItems[0].rating) /
             (user.ratedItems.length + 1);
-          user.ratedItems.push(req.body);
+          user.ratedItems.push(ratedItems[0]);
+        }
+      }
+      for (let j = 1; j < ratedItems.length; j++) {
+        if (ratedItems[j].rating > 5 || ratedItems[j].rating < 0) {
+          return res.status(401).json({
+            message: "We see you! but you can't... ",
+          });
+        }
+        let found = false;
+        for (let i = 0; i < user.ratedItems.length; i++) {
+          item = user.ratedItems[i];
+          if (item.item == ratedItems[j].item) {
+            user.averageRating +=
+              (ratedItems[j].rating - item.rating) / user.ratedItems.length;
+            item.rating = ratedItems[j].rating;
+            found = true;
+            break;
+          }
+        }
+        if (!found) {
+          user.averageRating =
+            (user.averageRating * user.ratedItems.length +
+              ratedItems[j].rating) /
+            (user.ratedItems.length + 1);
+          user.ratedItems.push(ratedItems[j]);
         }
       }
       user.save();
