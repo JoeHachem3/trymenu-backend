@@ -5,6 +5,10 @@ const checkAuth = require('../middleware/checkAuth');
 // const multer = require('multer')
 const usersController = require('../controllers/users');
 
+// updateRatings
+router.patch('/rating', checkAuth, usersController.updateRatings);
+// getRecommendedItems
+router.get('/cf-items', checkAuth, usersController.getRecommendedItems);
 // getAllUsers
 router.get('/', checkAuth, usersController.getAllUsers);
 // register

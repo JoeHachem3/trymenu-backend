@@ -25,6 +25,7 @@ const userSchema = mongoose.Schema({
       rating: { type: Number, min: 0, max: 5 },
     },
   ],
+  averageRating: { type: Number, default: 0 },
 });
 
 module.exports = mongoose.model('User', userSchema);

@@ -2,20 +2,74 @@ const User = require('../models/user');
 const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const collaborativeFiltering = require('../../algorithms/collaborativeFiltering');
 
-exports.getSimilarUsers = (req, res, next) => {
-  User.find({ _id: req.userData.userId })
-    .select('_id username first_name last_name email ratedItems')
+exports.updateRatings = (req, res, next) => {
+  if (req.body.rating > 5 || req.body.rating < 0) {
+    return res.status(401).json({
+      message: "We see you! but you can't... ",
+    });
+  }
+  User.findOne({ _id: req.userData.userId })
+    .select('ratedItems averageRating')
+    .exec()
+    .then((user) => {
+      if (user.ratedItems.length === 0) {
+        user.averageRating = req.body.rating;
+        user.ratedItems.push(req.body);
+      } else {
+        let found = false;
+        for (let i = 0; i < user.ratedItems.length; i++) {
+          item = user.ratedItems[i];
+          if (item.item == req.body.item) {
+            user.averageRating +=
+              (req.body.rating - item.rating) / user.ratedItems.length;
+            item.rating = req.body.rating;
+            found = true;
+            break;
+          }
+        }
+        if (!found) {
+          user.averageRating =
+            (user.averageRating * user.ratedItems.length + req.body.rating) /
+            (user.ratedItems.length + 1);
+          user.ratedItems.push(req.body);
+        }
+      }
+      user.save();
+      res.status(201).json({
+        message: 'Your rated items updated successfully!',
+        ratedItems: user.ratedItems,
+      });
+    })
+    .catch((error) => {
+      res.status(500).json({
+        error: error,
+      });
+    });
+};
+
+exports.getRecommendedItems = (req, res, next) => {
+  User.findOne({ _id: req.userData.userId })
+    .select('_id username first_name last_name email ratedItems averageRating')
     .populate('ratedItems.item', '_id, name')
     .exec()
     .then((user) => {
       const mainUser = user;
       User.find({ _id: { $ne: req.userData.userId } })
-        .select('_id username first_name last_name email ratedItems')
+        .select(
+          '_id username first_name last_name email ratedItems averageRating',
+        )
         .populate('ratedItems.item', '_id, name')
         .exec()
         .then((users) => {
-          //algorithm
+          const recommendedItems = collaborativeFiltering.recommendedItems(
+            mainUser,
+            users,
+          );
+          res.status(200).json({
+            recommendedItems: recommendedItems,
+          });
         });
     })
     .catch((error) => {
