@@ -4,7 +4,7 @@ const getAlikeUsers = (main, nb, users) => {
     next: null,
     k: 0,
   };
-  if (main.ratedItems.length === 0) {
+  if (main.ratedItems.length <= 1) {
     return similarUsers;
   }
 
@@ -129,6 +129,9 @@ const getAlikeUsers = (main, nb, users) => {
 };
 
 const reverseList = (head) => {
+  if (head == null) {
+    return head;
+  }
   let original = head;
   let cur = { ...original, ratedItems: [...original.ratedItems] };
   let reversedList = undefined;
@@ -187,5 +190,5 @@ exports.recommendedItems = (main, users) => {
     });
     cur = cur.next;
   }
-  return recommendedItems.sort((a, b) => a.rating > b.rating);
+  return recommendedItems.sort((a, b) => b.rating - a.rating);
 };
