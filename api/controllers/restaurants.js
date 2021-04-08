@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 
 exports.getAllRestaurants = (req, res, next) => {
   Restaurant.find()
-    .select('_id owner name phone email location category menu')
+    .select('_id owner name logo phone email location category menu')
     .exec()
     .then((restaurants) => {
       const response = {
@@ -14,6 +14,7 @@ exports.getAllRestaurants = (req, res, next) => {
               _id: restaurant._id,
               owner: restaurant.owner,
               name: restaurant.name,
+              logo: restaurant.logo,
               phone: restaurant.phone,
               email: restaurant.email,
               location: restaurant.location,
@@ -38,6 +39,8 @@ exports.createNewRestaurant = (req, res, next) => {
   const restaurant = new Restaurant({
     _id: new mongoose.Types.ObjectId(),
     ...req.body,
+    location: [...req.body.location],
+    logo: req.file.path,
   });
   restaurant
     .save()
@@ -48,6 +51,7 @@ exports.createNewRestaurant = (req, res, next) => {
           _id: restaurant._id,
           owner: restaurant.owner,
           name: restaurant.name,
+          logo: restaurant.logo,
           phone: restaurant.phone,
           email: restaurant.email,
           location: restaurant.location,
@@ -70,7 +74,7 @@ exports.createNewRestaurant = (req, res, next) => {
 exports.getSingleRestaurants = (req, res, next) => {
   const id = req.params.restaurantId;
   Restaurant.findById(id)
-    .select('_id owner name phone email location category menu')
+    .select('_id owner name logo phone email location category menu')
     .exec()
     .then((restaurant) => {
       if (restaurant) {
@@ -87,6 +91,9 @@ exports.getSingleRestaurants = (req, res, next) => {
 exports.updateRestaurant = (req, res, next) => {
   const id = req.params.restaurantId;
   const updatedRestaurant = { ...req.body };
+  if (req.file) {
+    updatedRestaurant['logo'] = req.file.path;
+  }
   Restaurant.updateOne(
     { _id: id },
     {

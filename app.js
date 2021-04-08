@@ -16,6 +16,7 @@ mongoose.connect(
 
 // to see requests in the console
 app.use(morgan('dev'));
+app.use('/uploads', express.static('./uploads'));
 
 // body-parser-> gives a body property to req
 app.use(express.json());
