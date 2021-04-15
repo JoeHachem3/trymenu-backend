@@ -9,9 +9,6 @@ const storage = multer.diskStorage({
     cb(null, './uploads/restaurants');
   },
   filename: (req, file, cb) => {
-    console.log(
-      new Date().toISOString().replace(/:/g, '-') + '-' + file.originalname,
-    );
     cb(
       null,
       new Date().toISOString().replace(/:/g, '') + '-' + file.originalname,
@@ -40,7 +37,7 @@ router.get('/', restaurantsController.getAllRestaurants);
 // createNewRestaurant
 router.post(
   '/',
-  // checkAuth,
+  checkAuth,
   upload.single('logo'),
   restaurantsController.createNewRestaurant,
 );

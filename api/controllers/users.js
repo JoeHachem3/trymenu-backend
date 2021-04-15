@@ -193,6 +193,7 @@ exports.register = (req, res, next) => {
                       res.status(201).json({
                         message: 'Your profile was created successfully',
                         token: token,
+                        expiresIn: new Date().getTime() + 10800000,
                         user: {
                           _id: user._id,
                           username: user.username,
@@ -220,10 +221,10 @@ exports.register = (req, res, next) => {
 };
 
 exports.login = (req, res, next) => {
-  User.find({ email: req.body.email })
+  User.findOne({ email: req.body.email })
     .exec()
     .then((user) => {
-      if (user.length === 0) {
+      if (!user) {
         return res.status(401).json({
           message: 'Login failed',
           action: {
@@ -231,7 +232,7 @@ exports.login = (req, res, next) => {
           },
         });
       }
-      bcrypt.compare(req.body.password, user[0].password, (error, result) => {
+      bcrypt.compare(req.body.password, user.password, (error, result) => {
         if (error) {
           return res.status(401).json({
             message: 'Login failed',
@@ -240,8 +241,8 @@ exports.login = (req, res, next) => {
         if (result) {
           const token = jwt.sign(
             {
-              email: user[0].email,
-              userId: user[0]._id,
+              email: user.email,
+              userId: user._id,
             },
             process.env.JWT_KEY,
             {
@@ -251,6 +252,14 @@ exports.login = (req, res, next) => {
           return res.status(200).json({
             message: 'Login successful',
             token: token,
+            user: {
+              _id: user._id,
+              username: user.username,
+              first_name: user.first_name,
+              last_name: user.last_name,
+              email: user.email,
+            },
+            expiresIn: new Date().getTime() + 10800000,
           });
         }
         res.status(401).json({

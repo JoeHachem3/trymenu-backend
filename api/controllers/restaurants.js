@@ -1,5 +1,6 @@
 const Restaurant = require('../models/restaurant');
 const mongoose = require('mongoose');
+const e = require('express');
 
 exports.getAllRestaurants = (req, res, next) => {
   Restaurant.find()
@@ -10,21 +11,15 @@ exports.getAllRestaurants = (req, res, next) => {
         count: restaurants.length,
         restaurants: restaurants.map((restaurant) => {
           return {
-            restaurant: {
-              _id: restaurant._id,
-              owner: restaurant.owner,
-              name: restaurant.name,
-              logo: restaurant.logo,
-              phone: restaurant.phone,
-              email: restaurant.email,
-              location: restaurant.location,
-              category: restaurant.category,
-              menu: restaurant.menu,
-            },
-            request: {
-              type: 'GET',
-              url: 'http://localhost:5000/restaurants/' + restaurant._id,
-            },
+            _id: restaurant._id,
+            owner: restaurant.owner,
+            name: restaurant.name,
+            logo: restaurant.logo,
+            phone: restaurant.phone,
+            email: restaurant.email,
+            location: restaurant.location,
+            category: restaurant.category,
+            menu: restaurant.menu,
           };
         }),
       };
@@ -36,12 +31,16 @@ exports.getAllRestaurants = (req, res, next) => {
 };
 
 exports.createNewRestaurant = (req, res, next) => {
+  console.log(req.body);
   const restaurant = new Restaurant({
     _id: new mongoose.Types.ObjectId(),
     ...req.body,
-    location: [...req.body.location],
+    location: [
+      // ...req.body.location
+    ],
     logo: req.file.path,
   });
+
   restaurant
     .save()
     .then(() => {
@@ -65,6 +64,7 @@ exports.createNewRestaurant = (req, res, next) => {
       });
     })
     .catch((err) => {
+      console.log('cool');
       res.status(500).json({
         error: err,
       });
