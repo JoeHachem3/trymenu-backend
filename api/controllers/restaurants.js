@@ -1,10 +1,10 @@
 const Restaurant = require('../models/restaurant');
 const mongoose = require('mongoose');
-const e = require('express');
+const fs = require('fs');
 
 exports.getAllRestaurants = (req, res, next) => {
   Restaurant.find()
-    .select('_id owner name logo phone email location category menu')
+    .select('_id owner name logo phone email location category')
     .exec()
     .then((restaurants) => {
       const response = {
@@ -19,7 +19,6 @@ exports.getAllRestaurants = (req, res, next) => {
             email: restaurant.email,
             location: restaurant.location,
             category: restaurant.category,
-            menu: restaurant.menu,
           };
         }),
       };
@@ -74,7 +73,7 @@ exports.createNewRestaurant = (req, res, next) => {
 exports.getSingleRestaurants = (req, res, next) => {
   const id = req.params.restaurantId;
   Restaurant.findById(id)
-    .select('_id owner name logo phone email location category menu')
+    .select(/*_id owner name logo phone email location category */ 'menu')
     .exec()
     .then((restaurant) => {
       if (restaurant) {
@@ -123,14 +122,25 @@ exports.updateRestaurant = (req, res, next) => {
 
 exports.deleteRestaurant = (req, res, next) => {
   const id = req.params.restaurantId;
-  Restaurant.deleteOne({ _id: id })
+  Restaurant.findOne({ _id: id })
     .exec()
-    .then(() => {
-      res
-        .status(200)
-        .json({ message: 'Your restaurant was deleted successfully' });
-    })
-    .catch((err) => {
-      res.status(500).json({ error: err });
+    .then((resto) => {
+      Restaurant.deleteOne({ _id: id })
+        .exec()
+        .then((result) => {
+          res
+            .status(200)
+            .json({ message: 'Your restaurant was deleted successfully' });
+          try {
+            const path = resto.logo.replace(/\/\//, '/').replace(/\\\\/, '/');
+            console.log(path);
+            fs.unlinkSync(path);
+          } catch (err) {
+            console.log(err);
+          }
+        })
+        .catch((err) => {
+          res.status(500).json({ error: err });
+        });
     });
 };

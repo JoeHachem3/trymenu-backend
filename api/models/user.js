@@ -19,12 +19,20 @@ const userSchema = mongoose.Schema({
     match: /[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?/,
   },
   password: { type: String, required: true, trim: true },
-  ratedItems: [
+  restaurants: [
     {
-      item: { type: mongoose.Schema.Types.ObjectId, ref: 'Item' },
-      rating: { type: Number, min: 0, max: 5 },
+      _id: { type: mongoose.Schema.Types.ObjectId, ref: 'Restaurant' },
+      ratedItems: [
+        {
+          item: { type: mongoose.Schema.Types.ObjectId, ref: 'Item' },
+          rating: { type: Number, min: 0, max: 5 },
+          prevRating: { type: Number, min: 0, max: 5 },
+        },
+      ],
+      averageRating: { type: Number, default: 0 },
     },
   ],
+
   averageRating: { type: Number, default: 0 },
 });
 

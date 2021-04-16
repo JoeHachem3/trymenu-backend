@@ -8,7 +8,7 @@ const usersController = require('../controllers/users');
 // updateRatings
 router.patch('/rating', checkAuth, usersController.updateRatings);
 // getRecommendedItems
-router.get('/cf-items', checkAuth, usersController.getRecommendedItems);
+router.post('/cf-items', checkAuth, usersController.getRecommendedItems);
 // getAllUsers
 router.get('/', checkAuth, usersController.getAllUsers);
 // register

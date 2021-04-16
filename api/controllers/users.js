@@ -4,6 +4,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const collaborativeFiltering = require('../../algorithms/collaborativeFiltering');
 
+// overall average rating missing!!!!
 exports.updateRatings = (req, res, next) => {
   if (req.body.ratedItems.length === 0) {
     return res.status(401).json({
@@ -11,68 +12,117 @@ exports.updateRatings = (req, res, next) => {
     });
   }
   User.findOne({ _id: req.userData.userId })
-    .select('ratedItems averageRating')
+    .select('restaurants averageRating')
     .exec()
     .then((user) => {
-      const ratedItems = req.body.ratedItems;
-      if (ratedItems[0].rating > 5 || ratedItems[0].rating < 0) {
-        return res.status(401).json({
-          message: "We see you! but you can't... ",
+      const restaurant = {};
+      const restaurants = [];
+      let averageRating = 0;
+      let itemCounter = 0;
+      user.restaurants.forEach((resto) => {
+        if (resto._id.toString() === req.body._id) {
+          restaurant = resto;
+        } else {
+          restaurants.push(resto);
+          averageRating += resto.averageRating * resto.ratedItems.length;
+          itemCounter += resto.ratedItems.length;
+        }
+      });
+      if (restaurant) {
+        const ratedItems = [];
+        let restaurantRating = 0;
+        req.body.ratedItems.forEach((item) => {
+          if (item.rating >= 0 && item.rating <= 5) {
+            ratedItems.push(item);
+            restaurantRating += item.rating;
+          }
+        });
+        restaurant.ratedItems = ratedItems;
+        if (ratedItems.length > 0) {
+          averageRating += restaurantRating;
+          itemCounter += ratedItems.length;
+          restaurant.averageRating = restaurantRating / ratedItems.length;
+        }
+
+        restaurants.push(restaurant);
+        user.restaurants = restaurants;
+        user.averageRating = averageRating / itemCounter;
+
+        let message;
+        if (ratedItems.length !== req.body.ratedItems.length) {
+          message =
+            'Some of your rated items updated successfully. Make sure the ratings are between 0 and 5!';
+        } else {
+          message = 'Your rated items updated successfully!';
+        }
+
+        // const ratedItems = req.body.ratedItems;
+        // if (ratedItems[0].rating > 5 || ratedItems[0].rating < 0) {
+        //   return res.status(401).json({
+        //     message: "We see you! but you can't... ",
+        //   });
+        // }
+        // if (restaurant.ratedItems.length === 0) {
+        //   restaurant.averageRating = ratedItems[0].rating;
+        //   restaurant.ratedItems.push(ratedItems[0]);
+        // } else {
+        //   let found = false;
+        //   for (let i = 0; i < restaurant.ratedItems.length; i++) {
+        //     item = restaurant.ratedItems[i];
+        //     if (item.item == ratedItems[0].item) {
+        //       restaurant.averageRating +=
+        //         (ratedItems[0].rating - item.rating) /
+        //         restaurant.ratedItems.length;
+        //       item.rating = ratedItems[0].rating;
+        //       found = true;
+        //       break;
+        //     }
+        //   }
+        //   if (!found) {
+        //     restaurant.averageRating =
+        //       (restaurant.averageRating * restaurant.ratedItems.length +
+        //         ratedItems[0].rating) /
+        //       (restaurant.ratedItems.length + 1);
+        //     restaurant.ratedItems.push(ratedItems[0]);
+        //   }
+        // }
+        // for (let j = 1; j < ratedItems.length; j++) {
+        //   if (ratedItems[j].rating > 5 || ratedItems[j].rating < 0) {
+        //     return res.status(401).json({
+        //       message: "We see you! but you can't... ",
+        //     });
+        //   }
+        //   let found = false;
+        //   for (let i = 0; i < restaurant.ratedItems.length; i++) {
+        //     item = restaurant.ratedItems[i];
+        //     if (item.item == ratedItems[j].item) {
+        //       restaurant.averageRating +=
+        //         (ratedItems[j].rating - item.rating) /
+        //         restaurant.ratedItems.length;
+        //       item.rating = ratedItems[j].rating;
+        //       found = true;
+        //       break;
+        //     }
+        //   }
+        //   if (!found) {
+        //     restaurant.averageRating =
+        //       (restaurant.averageRating * restaurant.ratedItems.length +
+        //         ratedItems[j].rating) /
+        //       (restaurant.ratedItems.length + 1);
+        //     restaurant.ratedItems.push(ratedItems[j]);
+        //   }
+        // }
+
+        user.save();
+        res.status(201).json({
+          message: message,
+          restaurant: restaurant,
+        });
+      } else {
+        res.status(404).json({
+          message: 'restaurant not found',
         });
       }
-      if (user.ratedItems.length === 0) {
-        user.averageRating = ratedItems[0].rating;
-        user.ratedItems.push(ratedItems[0]);
-      } else {
-        let found = false;
-        for (let i = 0; i < user.ratedItems.length; i++) {
-          item = user.ratedItems[i];
-          if (item.item == ratedItems[0].item) {
-            user.averageRating +=
-              (ratedItems[0].rating - item.rating) / user.ratedItems.length;
-            item.rating = ratedItems[0].rating;
-            found = true;
-            break;
-          }
-        }
-        if (!found) {
-          user.averageRating =
-            (user.averageRating * user.ratedItems.length +
-              ratedItems[0].rating) /
-            (user.ratedItems.length + 1);
-          user.ratedItems.push(ratedItems[0]);
-        }
-      }
-      for (let j = 1; j < ratedItems.length; j++) {
-        if (ratedItems[j].rating > 5 || ratedItems[j].rating < 0) {
-          return res.status(401).json({
-            message: "We see you! but you can't... ",
-          });
-        }
-        let found = false;
-        for (let i = 0; i < user.ratedItems.length; i++) {
-          item = user.ratedItems[i];
-          if (item.item == ratedItems[j].item) {
-            user.averageRating +=
-              (ratedItems[j].rating - item.rating) / user.ratedItems.length;
-            item.rating = ratedItems[j].rating;
-            found = true;
-            break;
-          }
-        }
-        if (!found) {
-          user.averageRating =
-            (user.averageRating * user.ratedItems.length +
-              ratedItems[j].rating) /
-            (user.ratedItems.length + 1);
-          user.ratedItems.push(ratedItems[j]);
-        }
-      }
-      user.save();
-      res.status(201).json({
-        message: 'Your rated items updated successfully!',
-        ratedItems: user.ratedItems,
-      });
     })
     .catch((error) => {
       res.status(500).json({
@@ -83,22 +133,29 @@ exports.updateRatings = (req, res, next) => {
 
 exports.getRecommendedItems = (req, res, next) => {
   User.findOne({ _id: req.userData.userId })
-    .select('_id username first_name last_name email ratedItems averageRating')
-    .populate('ratedItems.item', '_id, name')
+    .select('_id restaurants averageRating')
+    .populate('restaurants.ratedItems.item', '_id, name')
     .exec()
     .then((user) => {
       const mainUser = user;
       User.find({ _id: { $ne: req.userData.userId } })
-        .select(
-          '_id username first_name last_name email ratedItems averageRating',
-        )
-        .populate('ratedItems.item', '_id, name')
+        .select('_id restaurants averageRating')
+        .populate('restaurants.ratedItems.item', '_id, name')
         .exec()
         .then((users) => {
-          const recommendedItems = collaborativeFiltering.recommendedItems(
-            mainUser,
-            users,
-          );
+          if (req.body.restaurantId) {
+            const recommendedItems = collaborativeFiltering.recommendedItems(
+              mainUser,
+              users,
+              req.body.restaurantId,
+            );
+          } else {
+            const recommendedItems = collaborativeFiltering.allRecommendedItems(
+              mainUser,
+              users,
+            );
+          }
+
           res.status(200).json({
             recommendedItems: recommendedItems,
           });
@@ -127,7 +184,7 @@ exports.getAllUsers = (req, res, next) => {
               first_name: user.first_name,
               last_name: user.last_name,
               email: user.email,
-              ratedItem: user.ratedItems,
+              restaurants: user.restaurants,
             },
             request: {
               type: 'GET',

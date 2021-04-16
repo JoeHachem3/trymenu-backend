@@ -1,10 +1,12 @@
+const restaurant = require('../api/models/restaurant');
+
 const getAlikeUsers = (main, nb, users) => {
   let similarUsers = {
     count: 0,
     next: null,
     k: 0,
   };
-  if (main.ratedItems.length <= 1) {
+  if (main.restaurants.length <= 1) {
     return similarUsers;
   }
 
@@ -15,27 +17,35 @@ const getAlikeUsers = (main, nb, users) => {
     let numerator = 0;
     let denominator1 = 0;
     let denominator2 = 0;
-    main.ratedItems.forEach((item) => {
-      const userItem = user.ratedItems.find((userItem) => {
-        return userItem.item._id.toString() == item.item._id.toString();
+    main.restaurants.forEach((restaurant) => {
+      restaurant.ratedItems.forEach((item) => {
+        const userResto = user.restaurants.find(
+          (resto) => resto._id.toString() === restaurant._id.toString(),
+        );
+        if (userResto) {
+          const userItem = user.ratedItems.find((userItem) => {
+            return userItem.item._id.toString() === item.item._id.toString();
+          });
+          if (userItem) {
+            const temp1 = item.rating - main.averageRating;
+            const temp2 = userItem.rating - user.averageRating;
+            numerator += temp1 * temp2;
+            denominator1 += temp1 * temp1;
+            denominator2 += temp2 * temp2;
+          }
+        }
       });
-      if (userItem) {
-        const temp1 = item.rating - main.averageRating;
-        const temp2 = userItem.rating - user.averageRating;
-        numerator += temp1 * temp2;
-        denominator1 += temp1 * temp1;
-        denominator2 += temp2 * temp2;
-      }
     });
-    const tmpUser = { ...user, ratedItems: [...user.ratedItems] };
-    // if simil == 0 no correlation       X
+
+    const tmpUser = { ...user, restaurants: user.restaurants };
+    // if simil === 0 no correlation       X
     // if simil < 0 negative correlation  X
     // if simil > 0 positive correlation  V
     if (numerator > 0) {
-      tmpUser['simil'] = numerator / Math.sqrt(denominator1 * denominator2);
+      tmpUser.simil = numerator / Math.sqrt(denominator1 * denominator2);
 
       if (counter === 0) {
-        tmpUser['next'] = null;
+        tmpUser.next = null;
         similarUsers.next = tmpUser;
         // k
         // if (tmpUser.simil >= 0)
@@ -44,7 +54,7 @@ const getAlikeUsers = (main, nb, users) => {
 
         counter++;
       } else if (counter < nb) {
-        tmpUser['next'] = null;
+        tmpUser.next = null;
         let prev = similarUsers;
         let cur = similarUsers.next;
         while (cur !== null) {
@@ -83,7 +93,7 @@ const getAlikeUsers = (main, nb, users) => {
           // if (tmpUser.simil >= 0)
           similarUsers.k += tmpUser.simil;
           // else similarUsers.k -= tmpUser.simil;
-          tmpUser['next'] = null;
+          tmpUser.next = null;
           let prev = similarUsers.next;
           similarUsers.next = similarUsers.next.next;
           prev = similarUsers.next;
@@ -107,7 +117,7 @@ const getAlikeUsers = (main, nb, users) => {
   }
   // similarUsers are sorted from least to most similar
   // for calculation efficiency!
-  // if counter == nb, replace a similar user or no?
+  // if counter === nb, replace a similar user or no?
   similarUsers.count = counter;
   if (similarUsers.k > 0) {
     similarUsers.k = 1 / similarUsers.k;
@@ -133,7 +143,7 @@ const reverseList = (head) => {
     return head;
   }
   let original = head;
-  let cur = { ...original, ratedItems: [...original.ratedItems] };
+  let cur = { ...original, restaurants: original.restaurants };
   let reversedList = undefined;
   while (original !== null) {
     if (reversedList === undefined) {
@@ -146,46 +156,110 @@ const reverseList = (head) => {
     }
     original = original.next;
     if (original !== null) {
-      cur = { ...original, ratedItems: [...original.ratedItems] };
+      cur = { ...original, restaurants: original.restaurants };
     }
   }
   return reversedList;
 };
 
-const getExpectedRating = (similarUsers, item) => {
+const getExpectedRating = (similarUsers, restaurant, item) => {
   let sum = 0;
   let cur = similarUsers.next;
   while (cur !== null) {
-    const tmp = cur.ratedItems.find(
-      (i) => i.item._id.toString() == item._id.toString(),
+    const resto = cur.restaurants.find(
+      (resto) => resto._id.toString() === restaurant,
     );
-    if (tmp) {
-      sum += cur.simil * tmp.rating;
+    if (resto) {
+      const tmp = resto.ratedItems.find(
+        (i) => i.item._id.toString() === item._id.toString(),
+      );
+      if (tmp) {
+        sum += cur.simil * tmp.rating;
+      }
     }
+
     cur = cur.next;
   }
   return (similarUsers.k * sum).toFixed(5);
 };
 
-exports.recommendedItems = (main, users) => {
+exports.allRecommendedItems = (main, users) => {
+  const similarUsers = getAlikeUsers(main, 10, users);
+  let recommendedItems = [];
+  let restaurantsRecommendedItems = [];
+  let cur = similarUsers.next;
+  const differentItems = [];
+  while (cur !== null) {
+    cur.restaurants.forEach((restaurant) => {
+      const mainResto = main.restaurants.find(
+        (resto) => resto._id.toString() === restaurant._id.toString(),
+      );
+      if (!mainResto) {
+        const differentItems = restaurant.ratedItems;
+      } else {
+        const differentItems = restaurant.ratedItems.filter((item) => {
+          return (
+            !mainResto.ratedItems.find(
+              (i) => i.item._id.toString() === item.item._id.toString(),
+            ) &&
+            !recommendedItems.find(
+              (i) => i.item._id.toString() === item.item._id.toString(),
+            )
+          );
+        });
+      }
+      const tmpResto = { _id: restaurant._id, recommendedItems: [] };
+      differentItems.forEach((item) => {
+        tmpResto.recommendedItems.push({
+          item: item.item,
+          rating: getExpectedRating(similarUsers, restaurant._id, item.item),
+        });
+        tmpResto.recommendedItems.sort((a, b) => b.rating - a.rating);
+        restaurantsRecommendedItems.push(tmpResto);
+        recommendedItems.concat(tmpResto.recommendedItems);
+      });
+    });
+
+    cur = cur.next;
+  }
+  return [
+    restaurantsRecommendedItems,
+    recommendedItems.sort((a, b) => b.rating - a.rating),
+  ];
+};
+
+// every function has to change (average rating of the restaurant)
+exports.recommendedItems = (main, users, restaurantId) => {
   const similarUsers = getAlikeUsers(main, 10, users);
   let recommendedItems = [];
   let cur = similarUsers.next;
+  const differentItems = [];
+  const mainResto = main.restaurants.find(
+    (resto) => resto._id.toString() === restaurantId,
+  );
+  if (!mainResto) {
+    return null;
+  }
   while (cur !== null) {
-    const differentItems = cur.ratedItems.filter((item) => {
-      return (
-        !main.ratedItems.find(
-          (i) => i.item._id.toString() == item.item._id.toString(),
-        ) &&
-        !recommendedItems.find(
-          (i) => i.item._id.toString() == item.item._id.toString(),
-        )
-      );
-    });
+    const curResto = cur.restaurants.find(
+      (resto) => resto._id.toString() === restaurantId,
+    );
+    if (curResto) {
+      const differentItems = curResto.ratedItems.filter((item) => {
+        return (
+          !mainResto.ratedItems.find(
+            (i) => i.item._id.toString() === item.item._id.toString(),
+          ) &&
+          !recommendedItems.find(
+            (i) => i.item._id.toString() === item.item._id.toString(),
+          )
+        );
+      });
+    }
     differentItems.forEach((item) => {
       recommendedItems.push({
         item: item.item,
-        rating: getExpectedRating(similarUsers, item.item),
+        rating: getExpectedRating(similarUsers, restaurantId, item.item),
       });
     });
     cur = cur.next;
