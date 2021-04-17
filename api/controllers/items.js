@@ -1,9 +1,69 @@
 const mongoose = require('mongoose');
 const Item = require('../models/item');
+const User = require('../models/user');
+const fs = require('fs');
+
+exports.getRestaurantItems = (req, res, next) => {
+  Item.find({ restaurant: req.params.restaurantId })
+    .select('_id name price image category ingredients')
+    .exec()
+    .then((items) => {
+      if (req.userData) {
+        User.findOne({ _id: req.userData.userId })
+          .select('restaurants')
+          .exec()
+          .then((user) => {
+            console.log(user.restaurants);
+            let counter = 0;
+            const restaurant = user.restaurants.find(
+              (resto) => resto._id.toString() === req.params.restaurantId,
+            );
+            if (restaurant) {
+              let i = 0;
+              while (
+                i < items.length &&
+                counter < restaurant.ratedItems.length
+              ) {
+                const ratedItem = restaurant.ratedItems.find(
+                  (item) => item._id === items[i]._id,
+                );
+                if (ratedItem) {
+                  counter++;
+                  items[i].rating = ratedItem.rating;
+                  if (ratedItem.prevRating) {
+                    items[i].prevRating = ratedItem.prevRating;
+                  }
+                }
+                i++;
+              }
+            }
+            return res.status(200).json({
+              message:
+                'Make sure to keep your ratings up to date so that recommendations are accurate',
+              items: items,
+            });
+          })
+          .catch((err) => {
+            return res.status(200).json({
+              message: "Can't get your rated items now... try again later!",
+              items: items,
+            });
+          });
+      } else {
+        return res.status(200).json({
+          message: 'Give it a try... who knows what could your next hold?',
+          items: items,
+        });
+      }
+    })
+    .catch((err) => {
+      res.status(500).json({ err });
+    });
+};
 
 exports.getAllItems = (req, res, next) => {
   Item.find()
-    .select('_id name')
+    .select('_id name image category')
     .exec()
     .then((items) => {
       const response = {
@@ -29,9 +89,11 @@ exports.getAllItems = (req, res, next) => {
 };
 
 exports.createNewItem = (req, res, next) => {
+  console.log(req.body);
   const item = new Item({
     _id: new mongoose.Types.ObjectId(),
     ...req.body,
+    image: req.file.path,
   });
   item
     .save()
@@ -41,10 +103,9 @@ exports.createNewItem = (req, res, next) => {
         item: {
           _id: item._id,
           name: item.name,
-        },
-        request: {
-          type: 'GET',
-          url: 'http://localhost:5000/items/' + item._id,
+          price: item.price,
+          category: item.category,
+          image: item.image,
         },
       });
     })
@@ -58,7 +119,7 @@ exports.createNewItem = (req, res, next) => {
 exports.getSingleItem = (req, res, next) => {
   const id = req.params.itemId;
   Item.findById(id)
-    .select('_id name')
+    .select('_id name image category')
     .exec()
     .then((item) => {
       if (item) {
@@ -100,11 +161,28 @@ exports.updateItem = (req, res, next) => {
 
 exports.deleteItem = (req, res, next) => {
   const id = req.params.itemId;
-  Item.deleteOne({ _id: id })
+  Item.findOne({ _id: id })
     .exec()
-    .then(() => {
-      res.status(200).json({ message: 'Your item was deleted successfully' });
+    .then((item) => {
+      Item.deleteOne({ _id: id })
+        .exec()
+        .then(() => {
+          res
+            .status(200)
+            .json({ message: 'Your item was deleted successfully' });
+          try {
+            const path = item.image.replace(/\/\//, '/').replace(/\\\\/, '/');
+            fs.unlinkSync(path);
+          } catch (err) {
+            //sendEmail
+            console.log(err);
+          }
+        })
+        .catch((err) => {
+          res.status(500).json({ error: err });
+        });
     })
+
     .catch((err) => {
       res.status(500).json({ error: err });
     });

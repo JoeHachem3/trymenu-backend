@@ -73,7 +73,7 @@ exports.createNewRestaurant = (req, res, next) => {
 exports.getSingleRestaurants = (req, res, next) => {
   const id = req.params.restaurantId;
   Restaurant.findById(id)
-    .select(/*_id owner name logo phone email location category */ 'menu')
+    .select('_id owner name logo phone email location category')
     .exec()
     .then((restaurant) => {
       if (restaurant) {
@@ -133,9 +133,9 @@ exports.deleteRestaurant = (req, res, next) => {
             .json({ message: 'Your restaurant was deleted successfully' });
           try {
             const path = resto.logo.replace(/\/\//, '/').replace(/\\\\/, '/');
-            console.log(path);
             fs.unlinkSync(path);
           } catch (err) {
+            // sendEmail
             console.log(err);
           }
         })

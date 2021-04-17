@@ -20,8 +20,6 @@ const restaurantSchema = mongoose.Schema({
     lowercase: true,
     trim: true,
   },
-
-  menu: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Item' }],
 });
 
 module.exports = mongoose.model('Restaurant', restaurantSchema);
