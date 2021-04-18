@@ -1,4 +1,5 @@
 const Restaurant = require('../models/restaurant');
+const Item = require('../models/item');
 const mongoose = require('mongoose');
 const fs = require('fs');
 
@@ -127,7 +128,7 @@ exports.deleteRestaurant = (req, res, next) => {
     .then((resto) => {
       Restaurant.deleteOne({ _id: id })
         .exec()
-        .then((result) => {
+        .then(() => {
           res
             .status(200)
             .json({ message: 'Your restaurant was deleted successfully' });
@@ -135,9 +136,47 @@ exports.deleteRestaurant = (req, res, next) => {
             const path = resto.logo.replace(/\/\//, '/').replace(/\\\\/, '/');
             fs.unlinkSync(path);
           } catch (err) {
-            // sendEmail
-            console.log(err);
+            // sendEmail restaurant logo not deleted
           }
+          Item.find({ restaurant: id })
+            .exec()
+            .then((items) => {
+              items.forEach((item) => {
+                const date = new Date();
+                item.restaurantDeletedIn = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+                try {
+                  const path = item.image
+                    .replace(/\/\//, '/')
+                    .replace(/\\\\/, '/');
+                  fs.unlinkSync(path);
+                } catch (err) {
+                  // sendEmail item images not deleted
+                }
+
+                // to delete items
+
+                // Item.deleteMany({ restaurant: id })
+                //   .exec()
+                //   .then(() => {
+                //     items.forEach((item) => {
+                //       try {
+                //         const path = item.image
+                //           .replace(/\/\//, '/')
+                //           .replace(/\\\\/, '/');
+                //         fs.unlinkSync(path);
+                //       } catch (err) {
+                //         // sendEmail item images not deleted
+                //       }
+                //     });
+                //   })
+                //   .catch((err) => {
+                //     // sendEmail items not deleted
+              });
+            })
+
+            .catch((err) => {
+              res.status(500).json({ error: err });
+            });
         })
         .catch((err) => {
           res.status(500).json({ error: err });

@@ -2,18 +2,21 @@ const mongoose = require('mongoose');
 const Item = require('../models/item');
 const User = require('../models/user');
 const fs = require('fs');
+const item = require('../models/item');
 
 exports.getRestaurantItems = (req, res, next) => {
   Item.find({ restaurant: req.params.restaurantId })
     .select('_id name price image category ingredients')
     .exec()
     .then((items) => {
+      items = items.map((item) => {
+        return { item, rating: 0, prevRating: null };
+      });
       if (req.userData) {
         User.findOne({ _id: req.userData.userId })
           .select('restaurants')
           .exec()
           .then((user) => {
-            console.log(user.restaurants);
             let counter = 0;
             const restaurant = user.restaurants.find(
               (resto) => resto._id.toString() === req.params.restaurantId,
@@ -25,23 +28,30 @@ exports.getRestaurantItems = (req, res, next) => {
                 counter < restaurant.ratedItems.length
               ) {
                 const ratedItem = restaurant.ratedItems.find(
-                  (item) => item._id === items[i]._id,
+                  (item) =>
+                    item._id.toString() === items[i].item._id.toString(),
                 );
                 if (ratedItem) {
                   counter++;
                   items[i].rating = ratedItem.rating;
-                  if (ratedItem.prevRating) {
+                  if (ratedItem.prevRating !== null) {
                     items[i].prevRating = ratedItem.prevRating;
                   }
                 }
                 i++;
               }
+              return res.status(200).json({
+                message:
+                  'Make sure to keep your ratings up to date so that recommendations are accurate',
+                items: items,
+              });
+            } else {
+              return res.status(200).json({
+                message:
+                  'Give it a try... who knows what could your next meal hold?',
+                items: items,
+              });
             }
-            return res.status(200).json({
-              message:
-                'Make sure to keep your ratings up to date so that recommendations are accurate',
-              items: items,
-            });
           })
           .catch((err) => {
             return res.status(200).json({
@@ -51,7 +61,7 @@ exports.getRestaurantItems = (req, res, next) => {
           });
       } else {
         return res.status(200).json({
-          message: 'Give it a try... who knows what could your next hold?',
+          message: 'Make sure to register to start rating items',
           items: items,
         });
       }
@@ -89,7 +99,6 @@ exports.getAllItems = (req, res, next) => {
 };
 
 exports.createNewItem = (req, res, next) => {
-  console.log(req.body);
   const item = new Item({
     _id: new mongoose.Types.ObjectId(),
     ...req.body,
@@ -98,14 +107,20 @@ exports.createNewItem = (req, res, next) => {
   item
     .save()
     .then(() => {
+      const tmp = {
+        _id: item._id,
+        name: item.name,
+        price: item.price,
+        category: item.category,
+        image: item.image,
+        rating: 0,
+      };
       res.status(201).json({
         message: 'Your item was created successfully',
         item: {
-          _id: item._id,
-          name: item.name,
-          price: item.price,
-          category: item.category,
-          image: item.image,
+          item: tmp,
+          rating: 0,
+          prevRating: null,
         },
       });
     })
@@ -174,8 +189,7 @@ exports.deleteItem = (req, res, next) => {
             const path = item.image.replace(/\/\//, '/').replace(/\\\\/, '/');
             fs.unlinkSync(path);
           } catch (err) {
-            //sendEmail
-            console.log(err);
+            //sendEmail item image not deleted
           }
         })
         .catch((err) => {

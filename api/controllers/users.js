@@ -4,10 +4,10 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const collaborativeFiltering = require('../../algorithms/collaborativeFiltering');
 
-// overall average rating missing!!!!
 exports.updateRatings = (req, res, next) => {
+  console.log(req.body);
   if (req.body.ratedItems.length === 0) {
-    return res.status(401).json({
+    return res.status(200).json({
       message: 'okay..',
     });
   }
@@ -15,7 +15,7 @@ exports.updateRatings = (req, res, next) => {
     .select('restaurants averageRating')
     .exec()
     .then((user) => {
-      const restaurant = {};
+      let restaurant;
       const restaurants = [];
       let averageRating = 0;
       let itemCounter = 0;
@@ -28,101 +28,99 @@ exports.updateRatings = (req, res, next) => {
           itemCounter += resto.ratedItems.length;
         }
       });
-      if (restaurant) {
-        const ratedItems = [];
-        let restaurantRating = 0;
-        req.body.ratedItems.forEach((item) => {
-          if (item.rating >= 0 && item.rating <= 5) {
-            ratedItems.push(item);
-            restaurantRating += item.rating;
-          }
-        });
-        restaurant.ratedItems = ratedItems;
-        if (ratedItems.length > 0) {
-          averageRating += restaurantRating;
-          itemCounter += ratedItems.length;
-          restaurant.averageRating = restaurantRating / ratedItems.length;
-        }
-
-        restaurants.push(restaurant);
-        user.restaurants = restaurants;
-        user.averageRating = averageRating / itemCounter;
-
-        let message;
-        if (ratedItems.length !== req.body.ratedItems.length) {
-          message =
-            'Some of your rated items updated successfully. Make sure the ratings are between 0 and 5!';
-        } else {
-          message = 'Your rated items updated successfully!';
-        }
-
-        // const ratedItems = req.body.ratedItems;
-        // if (ratedItems[0].rating > 5 || ratedItems[0].rating < 0) {
-        //   return res.status(401).json({
-        //     message: "We see you! but you can't... ",
-        //   });
-        // }
-        // if (restaurant.ratedItems.length === 0) {
-        //   restaurant.averageRating = ratedItems[0].rating;
-        //   restaurant.ratedItems.push(ratedItems[0]);
-        // } else {
-        //   let found = false;
-        //   for (let i = 0; i < restaurant.ratedItems.length; i++) {
-        //     item = restaurant.ratedItems[i];
-        //     if (item.item == ratedItems[0].item) {
-        //       restaurant.averageRating +=
-        //         (ratedItems[0].rating - item.rating) /
-        //         restaurant.ratedItems.length;
-        //       item.rating = ratedItems[0].rating;
-        //       found = true;
-        //       break;
-        //     }
-        //   }
-        //   if (!found) {
-        //     restaurant.averageRating =
-        //       (restaurant.averageRating * restaurant.ratedItems.length +
-        //         ratedItems[0].rating) /
-        //       (restaurant.ratedItems.length + 1);
-        //     restaurant.ratedItems.push(ratedItems[0]);
-        //   }
-        // }
-        // for (let j = 1; j < ratedItems.length; j++) {
-        //   if (ratedItems[j].rating > 5 || ratedItems[j].rating < 0) {
-        //     return res.status(401).json({
-        //       message: "We see you! but you can't... ",
-        //     });
-        //   }
-        //   let found = false;
-        //   for (let i = 0; i < restaurant.ratedItems.length; i++) {
-        //     item = restaurant.ratedItems[i];
-        //     if (item.item == ratedItems[j].item) {
-        //       restaurant.averageRating +=
-        //         (ratedItems[j].rating - item.rating) /
-        //         restaurant.ratedItems.length;
-        //       item.rating = ratedItems[j].rating;
-        //       found = true;
-        //       break;
-        //     }
-        //   }
-        //   if (!found) {
-        //     restaurant.averageRating =
-        //       (restaurant.averageRating * restaurant.ratedItems.length +
-        //         ratedItems[j].rating) /
-        //       (restaurant.ratedItems.length + 1);
-        //     restaurant.ratedItems.push(ratedItems[j]);
-        //   }
-        // }
-
-        user.save();
-        res.status(201).json({
-          message: message,
-          restaurant: restaurant,
-        });
-      } else {
-        res.status(404).json({
-          message: 'restaurant not found',
-        });
+      if (!restaurant) {
+        restaurant = { _id: req.body._id };
       }
+      const ratedItems = [];
+      let restaurantRating = 0;
+      req.body.ratedItems.forEach((item) => {
+        if (item.rating >= 0 && item.rating <= 5) {
+          ratedItems.push(item);
+          restaurantRating += item.rating;
+        }
+      });
+      restaurant.ratedItems = ratedItems;
+      if (ratedItems.length > 0) {
+        averageRating += restaurantRating;
+        itemCounter += ratedItems.length;
+        restaurant.averageRating = restaurantRating / ratedItems.length;
+      }
+
+      restaurants.push(restaurant);
+      user.restaurants = restaurants;
+      user.averageRating = averageRating / itemCounter;
+
+      let message;
+      if (ratedItems.length !== req.body.ratedItems.length) {
+        message =
+          'Some of your rated items updated successfully. Make sure the ratings are between 0 and 5!';
+      } else {
+        message = 'Your rated items updated successfully!';
+      }
+
+      // const ratedItems = req.body.ratedItems;
+      // if (ratedItems[0].rating > 5 || ratedItems[0].rating < 0) {
+      //   return res.status(401).json({
+      //     message: "We see you! but you can't... ",
+      //   });
+      // }
+      // if (restaurant.ratedItems.length === 0) {
+      //   restaurant.averageRating = ratedItems[0].rating;
+      //   restaurant.ratedItems.push(ratedItems[0]);
+      // } else {
+      //   let found = false;
+      //   for (let i = 0; i < restaurant.ratedItems.length; i++) {
+      //     item = restaurant.ratedItems[i];
+      //     if (item.item == ratedItems[0].item) {
+      //       restaurant.averageRating +=
+      //         (ratedItems[0].rating - item.rating) /
+      //         restaurant.ratedItems.length;
+      //       item.rating = ratedItems[0].rating;
+      //       found = true;
+      //       break;
+      //     }
+      //   }
+      //   if (!found) {
+      //     restaurant.averageRating =
+      //       (restaurant.averageRating * restaurant.ratedItems.length +
+      //         ratedItems[0].rating) /
+      //       (restaurant.ratedItems.length + 1);
+      //     restaurant.ratedItems.push(ratedItems[0]);
+      //   }
+      // }
+      // for (let j = 1; j < ratedItems.length; j++) {
+      //   if (ratedItems[j].rating > 5 || ratedItems[j].rating < 0) {
+      //     return res.status(401).json({
+      //       message: "We see you! but you can't... ",
+      //     });
+      //   }
+      //   let found = false;
+      //   for (let i = 0; i < restaurant.ratedItems.length; i++) {
+      //     item = restaurant.ratedItems[i];
+      //     if (item.item == ratedItems[j].item) {
+      //       restaurant.averageRating +=
+      //         (ratedItems[j].rating - item.rating) /
+      //         restaurant.ratedItems.length;
+      //       item.rating = ratedItems[j].rating;
+      //       found = true;
+      //       break;
+      //     }
+      //   }
+      //   if (!found) {
+      //     restaurant.averageRating =
+      //       (restaurant.averageRating * restaurant.ratedItems.length +
+      //         ratedItems[j].rating) /
+      //       (restaurant.ratedItems.length + 1);
+      //     restaurant.ratedItems.push(ratedItems[j]);
+      //   }
+      // }
+
+      user.save();
+      res.status(201).json({
+        message: message,
+        restaurant: restaurant,
+        restaurants: restaurants,
+      });
     })
     .catch((error) => {
       res.status(500).json({
@@ -170,7 +168,7 @@ exports.getRecommendedItems = (req, res, next) => {
 
 exports.getAllUsers = (req, res, next) => {
   User.find({ _id: { $ne: req.userData.userId } })
-    .select('_id username first_name last_name email ratedItems')
+    .select('_id username first_name last_name email restaurants')
     .populate('ratedItems.item', '_id, name')
     .exec()
     .then((users) => {
@@ -257,6 +255,7 @@ exports.register = (req, res, next) => {
                           first_name: user.first_name,
                           last_name: user.last_name,
                           email: user.email,
+                          restaurants: user.restaurants,
                         },
                         request: {
                           type: 'GET',
@@ -315,6 +314,7 @@ exports.login = (req, res, next) => {
               first_name: user.first_name,
               last_name: user.last_name,
               email: user.email,
+              restaurants: user.restaurants,
             },
             expiresIn: new Date().getTime() + 10800000,
           });
@@ -338,7 +338,7 @@ exports.getSingleUser = (req, res, next) => {
   const id = req.params.userId;
   User.findById(id)
     .populate('ratedItems.item', '_id name')
-    .select('_id username first_name last_name email ratedItems')
+    .select('_id username first_name last_name email restaurants')
     .exec()
     .then((user) => {
       if (user) {

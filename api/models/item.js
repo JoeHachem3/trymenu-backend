@@ -4,7 +4,7 @@ const itemSchema = mongoose.Schema({
   _id: mongoose.Schema.Types.ObjectId,
   name: { type: String, required: true, lowercase: true, trim: true },
   price: { type: Number, required: true, trim: true },
-  image: { type: String },
+  image: { type: String, required: true },
   restaurant: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Restaurant',
@@ -18,6 +18,7 @@ const itemSchema = mongoose.Schema({
     // required: true,
   },
   ingredients: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Ingredient' }],
+  restaurantDeletedIn: { type: String },
 });
 
 module.exports = mongoose.model('Item', itemSchema);
