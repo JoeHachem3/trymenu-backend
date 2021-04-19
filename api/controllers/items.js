@@ -201,3 +201,22 @@ exports.deleteItem = (req, res, next) => {
       res.status(500).json({ error: err });
     });
 };
+
+exports.deleteItems = (req, res, next) => {
+  console.log(req.body);
+  const itemsToDelete = req.body.itemsToDelete.map((item) => {
+    return { _id: item };
+  });
+  Item.deleteMany({ $or: itemsToDelete })
+    .exec()
+    .then((result) => {
+      console.log(result);
+      res.status(204).json({ message: 'items deleted successfully' });
+    })
+    .catch((err) => {
+      console.log(err);
+      res
+        .status(400)
+        .json({ message: 'could not delete items... please try again later!' });
+    });
+};

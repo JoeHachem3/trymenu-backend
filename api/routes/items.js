@@ -53,5 +53,7 @@ router.get('/:itemId', itemsController.getSingleItem);
 router.patch('/:itemId', checkAuth, itemsController.updateItem);
 // deleteItem
 router.delete('/:itemId', checkAuth, itemsController.deleteItem);
+//deleteItems
+router.post('/delete', checkAuth, itemsController.deleteItems);
 
 module.exports = router;
