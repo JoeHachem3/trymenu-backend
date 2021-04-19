@@ -6,7 +6,7 @@ const getAlikeUsers = (main, nb, users) => {
     next: null,
     k: 0,
   };
-  if (main.restaurants.length <= 1) {
+  if (main.restaurants.length < 1) {
     return similarUsers;
   }
 
@@ -18,13 +18,13 @@ const getAlikeUsers = (main, nb, users) => {
     let denominator1 = 0;
     let denominator2 = 0;
     main.restaurants.forEach((restaurant) => {
+      const userResto = user.restaurants.find((resto) => {
+        return resto._id.toString() == restaurant._id.toString();
+      });
       restaurant.ratedItems.forEach((item) => {
-        const userResto = user.restaurants.find(
-          (resto) => resto._id.toString() === restaurant._id.toString(),
-        );
         if (userResto) {
-          const userItem = user.ratedItems.find((userItem) => {
-            return userItem.item._id.toString() === item.item._id.toString();
+          const userItem = userResto.ratedItems.find((userItem) => {
+            return userItem._id._id.toString() === item._id._id.toString();
           });
           if (userItem) {
             const temp1 = item.rating - main.averageRating;
@@ -41,8 +41,11 @@ const getAlikeUsers = (main, nb, users) => {
     // if simil === 0 no correlation       X
     // if simil < 0 negative correlation  X
     // if simil > 0 positive correlation  V
+    if (numerator < 0) console.log('negative');
+    if (numerator === 0) console.log('null');
     if (numerator > 0) {
       tmpUser.simil = numerator / Math.sqrt(denominator1 * denominator2);
+      console.log('positive');
 
       if (counter === 0) {
         tmpUser.next = null;
@@ -162,16 +165,16 @@ const reverseList = (head) => {
   return reversedList;
 };
 
-const getExpectedRating = (similarUsers, restaurant, item) => {
+const getExpectedRating = (similarUsers, restaurantId, item) => {
   let sum = 0;
   let cur = similarUsers.next;
   while (cur !== null) {
     const resto = cur.restaurants.find(
-      (resto) => resto._id.toString() === restaurant,
+      (resto) => resto._id.toString() === restaurantId.toString(),
     );
     if (resto) {
       const tmp = resto.ratedItems.find(
-        (i) => i.item._id.toString() === item._id.toString(),
+        (i) => i._id._id.toString() === item._id.toString(),
       );
       if (tmp) {
         sum += cur.simil * tmp.rating;
@@ -188,42 +191,70 @@ exports.allRecommendedItems = (main, users) => {
   let recommendedItems = [];
   let restaurantsRecommendedItems = [];
   let cur = similarUsers.next;
-  const differentItems = [];
+  let differentItems;
   while (cur !== null) {
     cur.restaurants.forEach((restaurant) => {
       const mainResto = main.restaurants.find(
         (resto) => resto._id.toString() === restaurant._id.toString(),
       );
       if (!mainResto) {
-        const differentItems = restaurant.ratedItems;
+        differentItems = restaurant.ratedItems.filter((item) => {
+          return !recommendedItems.find(
+            (i) => i.item._id.toString() === item._id._id.toString(),
+          );
+        });
       } else {
-        const differentItems = restaurant.ratedItems.filter((item) => {
+        differentItems = restaurant.ratedItems.filter((item) => {
           return (
             !mainResto.ratedItems.find(
-              (i) => i.item._id.toString() === item.item._id.toString(),
+              (i) => i._id._id.toString() === item._id._id.toString(),
             ) &&
             !recommendedItems.find(
-              (i) => i.item._id.toString() === item.item._id.toString(),
+              (i) => i.item._id.toString() === item._id._id.toString(),
             )
           );
         });
       }
-      const tmpResto = { _id: restaurant._id, recommendedItems: [] };
+      let tmpResto;
+      const tmpRestaurants = [];
+      for (let i = 0; i < restaurantsRecommendedItems.length; i++) {
+        if (
+          restaurantsRecommendedItems[i]._id.toString() ===
+          restaurant._id.toString()
+        ) {
+          tmpResto = restaurantsRecommendedItems[i];
+        } else {
+          tmpRestaurants.push(restaurantsRecommendedItems[i]);
+        }
+      }
+      if (!tmpResto) {
+        tmpResto = { _id: restaurant._id, recommendedItems: [] };
+      }
       differentItems.forEach((item) => {
-        tmpResto.recommendedItems.push({
-          item: item.item,
-          rating: getExpectedRating(similarUsers, restaurant._id, item.item),
-        });
-        tmpResto.recommendedItems.sort((a, b) => b.rating - a.rating);
-        restaurantsRecommendedItems.push(tmpResto);
-        recommendedItems.concat(tmpResto.recommendedItems);
+        // console.log(tmpResto._id);
+        const tmpItem = {
+          item: item._id,
+          rating: getExpectedRating(similarUsers, restaurant._id, item._id),
+        };
+        tmpResto.recommendedItems.push(tmpItem);
+        recommendedItems.push(tmpItem);
       });
+      tmpResto.recommendedItems.sort((a, b) => b.rating - a.rating);
+      if (tmpResto.recommendedItems.length) {
+        tmpRestaurants.push(tmpResto);
+      }
+      restaurantsRecommendedItems = tmpRestaurants;
+      // recommendedItems = recommendedItems.concat(tmpResto.recommendedItems);
+      // console.log(recommendedItems);
     });
 
     cur = cur.next;
   }
+  console.log(restaurantsRecommendedItems);
   return [
-    restaurantsRecommendedItems,
+    restaurantsRecommendedItems.sort((a, b) => {
+      return b.recommendedItems[0].rating - a.recommendedItems[0].rating;
+    }),
     recommendedItems.sort((a, b) => b.rating - a.rating),
   ];
 };
@@ -248,10 +279,10 @@ exports.recommendedItems = (main, users, restaurantId) => {
       const differentItems = curResto.ratedItems.filter((item) => {
         return (
           !mainResto.ratedItems.find(
-            (i) => i.item._id.toString() === item.item._id.toString(),
+            (i) => i._id._id.toString() === item._id._id.toString(),
           ) &&
           !recommendedItems.find(
-            (i) => i.item._id.toString() === item.item._id.toString(),
+            (i) => i._id._id.toString() === item._id._id.toString(),
           )
         );
       });

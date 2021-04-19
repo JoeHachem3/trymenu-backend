@@ -24,7 +24,7 @@ const userSchema = mongoose.Schema({
       _id: { type: mongoose.Schema.Types.ObjectId, ref: 'Restaurant' },
       ratedItems: [
         {
-          item: { type: mongoose.Schema.Types.ObjectId, ref: 'Item' },
+          _id: { type: mongoose.Schema.Types.ObjectId, ref: 'Item' },
           rating: { type: Number, min: 0, max: 5 },
           prevRating: { type: Number, min: 0, max: 5 },
         },

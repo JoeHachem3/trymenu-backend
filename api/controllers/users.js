@@ -58,63 +58,6 @@ exports.updateRatings = (req, res, next) => {
         message = 'Your rated items updated successfully!';
       }
 
-      // const ratedItems = req.body.ratedItems;
-      // if (ratedItems[0].rating > 5 || ratedItems[0].rating < 0) {
-      //   return res.status(401).json({
-      //     message: "We see you! but you can't... ",
-      //   });
-      // }
-      // if (restaurant.ratedItems.length === 0) {
-      //   restaurant.averageRating = ratedItems[0].rating;
-      //   restaurant.ratedItems.push(ratedItems[0]);
-      // } else {
-      //   let found = false;
-      //   for (let i = 0; i < restaurant.ratedItems.length; i++) {
-      //     item = restaurant.ratedItems[i];
-      //     if (item.item == ratedItems[0].item) {
-      //       restaurant.averageRating +=
-      //         (ratedItems[0].rating - item.rating) /
-      //         restaurant.ratedItems.length;
-      //       item.rating = ratedItems[0].rating;
-      //       found = true;
-      //       break;
-      //     }
-      //   }
-      //   if (!found) {
-      //     restaurant.averageRating =
-      //       (restaurant.averageRating * restaurant.ratedItems.length +
-      //         ratedItems[0].rating) /
-      //       (restaurant.ratedItems.length + 1);
-      //     restaurant.ratedItems.push(ratedItems[0]);
-      //   }
-      // }
-      // for (let j = 1; j < ratedItems.length; j++) {
-      //   if (ratedItems[j].rating > 5 || ratedItems[j].rating < 0) {
-      //     return res.status(401).json({
-      //       message: "We see you! but you can't... ",
-      //     });
-      //   }
-      //   let found = false;
-      //   for (let i = 0; i < restaurant.ratedItems.length; i++) {
-      //     item = restaurant.ratedItems[i];
-      //     if (item.item == ratedItems[j].item) {
-      //       restaurant.averageRating +=
-      //         (ratedItems[j].rating - item.rating) /
-      //         restaurant.ratedItems.length;
-      //       item.rating = ratedItems[j].rating;
-      //       found = true;
-      //       break;
-      //     }
-      //   }
-      //   if (!found) {
-      //     restaurant.averageRating =
-      //       (restaurant.averageRating * restaurant.ratedItems.length +
-      //         ratedItems[j].rating) /
-      //       (restaurant.ratedItems.length + 1);
-      //     restaurant.ratedItems.push(ratedItems[j]);
-      //   }
-      // }
-
       user.save();
       res.status(201).json({
         message: message,
@@ -132,23 +75,24 @@ exports.updateRatings = (req, res, next) => {
 exports.getRecommendedItems = (req, res, next) => {
   User.findOne({ _id: req.userData.userId })
     .select('_id restaurants averageRating')
-    .populate('restaurants.ratedItems.item', '_id, name')
+    .populate('restaurants.ratedItems._id')
     .exec()
     .then((user) => {
       const mainUser = user;
       User.find({ _id: { $ne: req.userData.userId } })
         .select('_id restaurants averageRating')
-        .populate('restaurants.ratedItems.item', '_id, name')
+        .populate('restaurants.ratedItems._id')
         .exec()
         .then((users) => {
+          let recommendedItems;
           if (req.body.restaurantId) {
-            const recommendedItems = collaborativeFiltering.recommendedItems(
+            recommendedItems = collaborativeFiltering.recommendedItems(
               mainUser,
               users,
               req.body.restaurantId,
             );
           } else {
-            const recommendedItems = collaborativeFiltering.allRecommendedItems(
+            recommendedItems = collaborativeFiltering.allRecommendedItems(
               mainUser,
               users,
             );
@@ -169,7 +113,6 @@ exports.getRecommendedItems = (req, res, next) => {
 exports.getAllUsers = (req, res, next) => {
   User.find({ _id: { $ne: req.userData.userId } })
     .select('_id username first_name last_name email restaurants')
-    .populate('ratedItems.item', '_id, name')
     .exec()
     .then((users) => {
       const response = {
@@ -337,7 +280,6 @@ exports.login = (req, res, next) => {
 exports.getSingleUser = (req, res, next) => {
   const id = req.params.userId;
   User.findById(id)
-    .populate('ratedItems.item', '_id name')
     .select('_id username first_name last_name email restaurants')
     .exec()
     .then((user) => {
