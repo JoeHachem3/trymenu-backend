@@ -2,6 +2,7 @@ const express = require('express');
 const app = express();
 const morgan = require('morgan');
 const mongoose = require('mongoose');
+const config = require('./config');
 
 const userRoutes = require('./api/routes/users');
 const restaurantRoutes = require('./api/routes/restaurants');
@@ -9,7 +10,7 @@ const itemRoutes = require('./api/routes/items');
 
 mongoose.connect(
   'mongodb+srv://admin:' +
-    process.env.MONGO_ATLAS_PW +
+    config.MONGO_ATLAS_PW +
     '@cluster0.aw175.mongodb.net/tryMenu',
   { useNewUrlParser: true, useUnifiedTopology: true, useCreateIndex: true },
 );
