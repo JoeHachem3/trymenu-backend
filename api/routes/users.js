@@ -1,8 +1,6 @@
 const express = require('express');
 const router = express.Router();
 const checkAuth = require('../middleware/checkAuth');
-// to parse files:
-// const multer = require('multer')
 const usersController = require('../controllers/users');
 
 // updateRatings
