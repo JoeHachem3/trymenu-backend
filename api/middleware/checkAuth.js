@@ -10,7 +10,7 @@ module.exports = (req, res, next) => {
     return res.status(401).json({
       message: 'Authentication failed',
       whatever: 'hi',
-      test: process.env.MONGO_ATLAS_PW,
+      test: process.env,
     });
   }
 };
