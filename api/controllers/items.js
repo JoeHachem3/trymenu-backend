@@ -113,7 +113,6 @@ exports.createNewItem = (req, res, next) => {
         price: item.price,
         category: item.category,
         image: item.image,
-        rating: 0,
       };
       res.status(201).json({
         message: 'Your item was created successfully',
