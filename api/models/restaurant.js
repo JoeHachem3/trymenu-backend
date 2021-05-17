@@ -20,6 +20,13 @@ const restaurantSchema = mongoose.Schema({
     lowercase: true,
     trim: true,
   },
+  cuisine: {
+    type: String,
+    required: true,
+    lowercase: true,
+    trim: true,
+  },
+  deletedAt: { type: Date },
 });
 
 module.exports = mongoose.model('Restaurant', restaurantSchema);

@@ -18,7 +18,8 @@ const itemSchema = mongoose.Schema({
     // required: true,
   },
   ingredients: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Ingredient' }],
-  restaurantDeletedIn: { type: String },
+  restaurantDeletedAt: { type: Date },
+  deletedAt: { type: Date },
 });
 
 module.exports = mongoose.model('Item', itemSchema);

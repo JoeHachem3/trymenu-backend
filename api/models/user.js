@@ -16,9 +16,15 @@ const userSchema = mongoose.Schema({
     required: true,
     unique: true,
     trim: true,
-    match: /[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?/,
+    match:
+      /[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?/,
   },
   password: { type: String, required: true, trim: true },
+  cuisine: {
+    type: String,
+    lowercase: true,
+    trim: true,
+  },
   restaurants: [
     {
       _id: { type: mongoose.Schema.Types.ObjectId, ref: 'Restaurant' },

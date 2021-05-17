@@ -113,7 +113,7 @@ exports.getRecommendedItems = (req, res, next) => {
 
 exports.getAllUsers = (req, res, next) => {
   User.find({ _id: { $ne: req.userData.userId } })
-    .select('_id username first_name last_name email restaurants')
+    .select('_id username first_name last_name email cuisine restaurants')
     .exec()
     .then((users) => {
       const response = {
@@ -126,11 +126,8 @@ exports.getAllUsers = (req, res, next) => {
               first_name: user.first_name,
               last_name: user.last_name,
               email: user.email,
+              cuisine: user.cuisine,
               restaurants: user.restaurants,
-            },
-            request: {
-              type: 'GET',
-              url: 'http://localhost:5000/users/' + user._id,
             },
           };
         }),
@@ -171,11 +168,14 @@ exports.register = (req, res, next) => {
                     error: err,
                   });
                 } else {
-                  const user = new User({
-                    _id: new mongoose.Types.ObjectId(),
-                    ...req.body,
-                    password: hash,
-                  });
+                  const user = new User(
+                    {
+                      _id: new mongoose.Types.ObjectId(),
+                      ...req.body,
+                      password: hash,
+                    },
+                    { timestamps: true },
+                  );
                   const token = jwt.sign(
                     {
                       email: user.email,
@@ -199,11 +199,8 @@ exports.register = (req, res, next) => {
                           first_name: user.first_name,
                           last_name: user.last_name,
                           email: user.email,
+                          cuisine: user.cuisine,
                           restaurants: user.restaurants,
-                        },
-                        request: {
-                          type: 'GET',
-                          url: 'http://localhost:5000/users/' + user._id,
                         },
                       });
                     })
@@ -258,6 +255,7 @@ exports.login = (req, res, next) => {
               first_name: user.first_name,
               last_name: user.last_name,
               email: user.email,
+              cuisine: user.cuisine,
               restaurants: user.restaurants,
             },
             expiresIn: new Date().getTime() + 10800000,
@@ -281,7 +279,7 @@ exports.login = (req, res, next) => {
 exports.getSingleUser = (req, res, next) => {
   const id = req.params.userId;
   User.findById(id)
-    .select('_id username first_name last_name email restaurants')
+    .select('_id username first_name last_name email cuisine restaurants')
     .exec()
     .then((user) => {
       if (user) {
@@ -309,10 +307,6 @@ exports.updateUser = (req, res, next) => {
       .then(() => {
         res.status(200).json({
           message: 'Your account was successfully updated',
-          request: {
-            type: 'GET',
-            url: 'http://localhost:5000/users/' + id,
-          },
         });
       })
       .catch((err) => {

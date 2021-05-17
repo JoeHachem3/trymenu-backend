@@ -99,11 +99,14 @@ exports.getAllItems = (req, res, next) => {
 };
 
 exports.createNewItem = (req, res, next) => {
-  const item = new Item({
-    _id: new mongoose.Types.ObjectId(),
-    ...req.body,
-    image: req.file.path,
-  });
+  const item = new Item(
+    {
+      _id: new mongoose.Types.ObjectId(),
+      ...req.body,
+      image: req.file.path,
+    },
+    { timestamps: true },
+  );
   item
     .save()
     .then(() => {
@@ -178,18 +181,21 @@ exports.deleteItem = (req, res, next) => {
   Item.findOne({ _id: id })
     .exec()
     .then((item) => {
-      Item.deleteOne({ _id: id })
+      Item.findOne({ _id: id })
         .exec()
-        .then(() => {
+        .then((item) => {
+          const date = new Date();
+          item.deletedAt = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+          item.save();
           res
             .status(200)
             .json({ message: 'Your item was deleted successfully' });
-          try {
-            const path = item.image.replace(/\/\//, '/').replace(/\\\\/, '/');
-            fs.unlinkSync(path);
-          } catch (err) {
-            //sendEmail item image not deleted
-          }
+          // try {
+          //   const path = item.image.replace(/\/\//, '/').replace(/\\\\/, '/');
+          //   fs.unlinkSync(path);
+          // } catch (err) {
+          //   //sendEmail item image not deleted
+          // }
         })
         .catch((err) => {
           res.status(500).json({ error: err });
@@ -209,27 +215,31 @@ exports.deleteItems = (req, res, next) => {
   Item.find({ $or: itemsToDelete })
     .exec()
     .then((items) => {
+      const date = new Date();
       items.forEach((item) => {
-        try {
-          const path = item.image.replace(/\/\//, '/').replace(/\\\\/, '/');
-          fs.unlinkSync(path);
-        } catch (err) {
-          //sendEmail item image not deleted
-        }
+        //   try {
+        //     const path = item.image.replace(/\/\//, '/').replace(/\\\\/, '/');
+        //     fs.unlinkSync(path);
+        //   } catch (err) {
+        //     //sendEmail item image not deleted
+        //   }
+
+        item.deletedAt = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+        item.save();
       });
 
-      Item.deleteMany({ $or: itemsToDelete })
-        .exec()
-        .then((result) => {
-          console.log(result);
-          res.status(204).json({ message: 'items deleted successfully' });
-        })
-        .catch((err) => {
-          console.log(err);
-          res.status(400).json({
-            message: 'could not delete items... please try again later!',
-          });
-        });
+      // Item.deleteMany({ $or: itemsToDelete })
+      //   .exec()
+      //   .then((result) => {
+      //     console.log(result);
+      //     res.status(204).json({ message: 'items deleted successfully' });
+      //   })
+      //   .catch((err) => {
+      //     console.log(err);
+      //     res.status(400).json({
+      //       message: 'could not delete items... please try again later!',
+      //     });
+      //   });
     })
     .catch((err) => {
       console.log(err);

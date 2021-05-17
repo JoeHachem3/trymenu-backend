@@ -5,7 +5,7 @@ const fs = require('fs');
 
 exports.getAllRestaurants = (req, res, next) => {
   Restaurant.find()
-    .select('_id owner name logo phone email location category')
+    .select('_id owner name logo phone email location category cuisine')
     .exec()
     .then((restaurants) => {
       const response = {
@@ -20,6 +20,7 @@ exports.getAllRestaurants = (req, res, next) => {
             email: restaurant.email,
             location: restaurant.location,
             category: restaurant.category,
+            cuisine: restaurant.cuisine,
           };
         }),
       };
@@ -32,14 +33,17 @@ exports.getAllRestaurants = (req, res, next) => {
 
 exports.createNewRestaurant = (req, res, next) => {
   console.log(req.body);
-  const restaurant = new Restaurant({
-    _id: new mongoose.Types.ObjectId(),
-    ...req.body,
-    location: [
-      // ...req.body.location
-    ],
-    logo: req.file.path,
-  });
+  const restaurant = new Restaurant(
+    {
+      _id: new mongoose.Types.ObjectId(),
+      ...req.body,
+      location: [
+        // ...req.body.location
+      ],
+      logo: req.file.path,
+    },
+    { timestamps: true },
+  );
 
   restaurant
     .save()
@@ -55,16 +59,11 @@ exports.createNewRestaurant = (req, res, next) => {
           email: restaurant.email,
           location: restaurant.location,
           category: restaurant.category,
-          menu: restaurant.menu,
-        },
-        request: {
-          type: 'GET',
-          url: 'http://localhost:5000/restaurants/' + restaurant._id,
+          cuisine: restaurant.cuisine,
         },
       });
     })
     .catch((err) => {
-      console.log('cool');
       res.status(500).json({
         error: err,
       });
@@ -74,7 +73,7 @@ exports.createNewRestaurant = (req, res, next) => {
 exports.getSingleRestaurants = (req, res, next) => {
   const id = req.params.restaurantId;
   Restaurant.findById(id)
-    .select('_id owner name logo phone email location category')
+    .select('_id owner name logo phone email location category cuisine')
     .exec()
     .then((restaurant) => {
       if (restaurant) {
@@ -108,10 +107,6 @@ exports.updateRestaurant = (req, res, next) => {
         )} got successfully updated to ${Object.values(updatedRestaurant).join(
           ', ',
         )}`,
-        request: {
-          type: 'GET',
-          url: 'http://localhost:5000/restaurants/' + id,
-        },
       });
     })
     .catch((err) => {
@@ -126,32 +121,34 @@ exports.deleteRestaurant = (req, res, next) => {
   Restaurant.findOne({ _id: id })
     .exec()
     .then((resto) => {
-      Restaurant.deleteOne({ _id: id })
+      Restaurant.findOne({ _id: id })
         .exec()
-        .then(() => {
+        .then((restaurant) => {
+          const date = new Date();
+          restaurant.deletedAt = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+          restaurant.save();
           res
             .status(200)
             .json({ message: 'Your restaurant was deleted successfully' });
-          try {
-            const path = resto.logo.replace(/\/\//, '/').replace(/\\\\/, '/');
-            fs.unlinkSync(path);
-          } catch (err) {
-            // sendEmail restaurant logo not deleted
-          }
+          // try {
+          //   const path = resto.logo.replace(/\/\//, '/').replace(/\\\\/, '/');
+          //   fs.unlinkSync(path);
+          // } catch (err) {
+          //   // sendEmail restaurant logo not deleted
+          // }
           Item.find({ restaurant: id })
             .exec()
             .then((items) => {
               items.forEach((item) => {
-                const date = new Date();
                 item.restaurantDeletedIn = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
-                try {
-                  const path = item.image
-                    .replace(/\/\//, '/')
-                    .replace(/\\\\/, '/');
-                  fs.unlinkSync(path);
-                } catch (err) {
-                  // sendEmail item images not deleted
-                }
+                // try {
+                //   const path = item.image
+                //     .replace(/\/\//, '/')
+                //     .replace(/\\\\/, '/');
+                //   fs.unlinkSync(path);
+                // } catch (err) {
+                //   // sendEmail item images not deleted
+                // }
 
                 // to delete items
 

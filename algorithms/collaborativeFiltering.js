@@ -1,5 +1,3 @@
-const restaurant = require('../api/models/restaurant');
-
 const getAlikeUsers = (main, nb, users) => {
   let similarUsers = {
     count: 0,
@@ -194,18 +192,25 @@ exports.allRecommendedItems = (main, users) => {
   let differentItems;
   while (cur !== null) {
     cur.restaurants.forEach((restaurant) => {
+      if (restaurant.deletedAt) {
+        return;
+      }
       const mainResto = main.restaurants.find(
         (resto) => resto._id.toString() === restaurant._id.toString(),
       );
       if (!mainResto) {
         differentItems = restaurant.ratedItems.filter((item) => {
-          return !recommendedItems.find(
-            (i) => i.item._id.toString() === item._id._id.toString(),
+          return (
+            !item._id.deletedAt &&
+            !recommendedItems.find(
+              (i) => i.item._id.toString() === item._id._id.toString(),
+            )
           );
         });
       } else {
         differentItems = restaurant.ratedItems.filter((item) => {
           return (
+            !item._id.deletedAt &&
             !mainResto.ratedItems.find(
               (i) => i._id._id.toString() === item._id._id.toString(),
             ) &&
@@ -278,6 +283,7 @@ exports.recommendedItems = (main, users, restaurantId) => {
     if (curResto) {
       const differentItems = curResto.ratedItems.filter((item) => {
         return (
+          !item._id.deletedAt &&
           !mainResto.ratedItems.find(
             (i) => i._id._id.toString() === item._id._id.toString(),
           ) &&
