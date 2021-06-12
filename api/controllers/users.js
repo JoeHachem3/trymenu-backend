@@ -6,10 +6,9 @@ const config = require('../../config');
 const collaborativeFiltering = require('../../algorithms/collaborativeFiltering');
 
 exports.updateRatings = (req, res, next) => {
-  console.log(req.body);
   if (req.body.ratedItems.length === 0) {
-    return res.status(200).json({
-      message: 'okay..',
+    return res.json({
+      success: true,
     });
   }
   User.findOne({ _id: req.userData.userId })
@@ -60,15 +59,17 @@ exports.updateRatings = (req, res, next) => {
       }
 
       user.save();
-      res.status(201).json({
+      res.json({
+        success: true,
         message: message,
         restaurant: restaurant,
         restaurants: restaurants,
       });
     })
     .catch((error) => {
-      res.status(500).json({
-        error: error,
+      res.json({
+        success: false,
+        message: 'Oops, something went wrong... please try again later!',
       });
     });
 };
@@ -99,14 +100,13 @@ exports.getRecommendedItems = (req, res, next) => {
             );
           }
 
-          res.status(200).json({
-            recommendedItems: recommendedItems,
-          });
+          res.json({ success: true, recommendedItems });
         });
     })
     .catch((error) => {
-      res.status(500).json({
-        error: error,
+      res.json({
+        success: false,
+        message: 'Oops, something went wrong... please try again later!',
       });
     });
 };
@@ -116,26 +116,13 @@ exports.getAllUsers = (req, res, next) => {
     .select('_id username first_name last_name email cuisine restaurants')
     .exec()
     .then((users) => {
-      const response = {
-        count: users.length,
-        users: users.map((user) => {
-          return {
-            user: {
-              _id: user._id,
-              username: user.username,
-              first_name: user.first_name,
-              last_name: user.last_name,
-              email: user.email,
-              cuisine: user.cuisine,
-              restaurants: user.restaurants,
-            },
-          };
-        }),
-      };
-      res.status(200).json({ response });
+      res.json({ success: true, users });
     })
     .catch((err) => {
-      res.status(500).json({ error: err });
+      res.json({
+        success: false,
+        message: 'Oops, something went wrong... please try again later!',
+      });
     });
 };
 
@@ -144,28 +131,26 @@ exports.register = (req, res, next) => {
     .exec()
     .then((user) => {
       if (user.length > 0) {
-        return res.status(409).json({
+        return res.json({
+          success: false,
           message: 'This email is already used',
-          action: {
-            login: true,
-          },
         });
       } else {
         User.find({ username: req.body.username })
           .exec()
           .then((user) => {
             if (user.length > 0) {
-              return res.status(409).json({
+              return res.json({
+                success: false,
                 message: 'Username already exists',
-                action: {
-                  changeUsername: true,
-                },
               });
             } else {
               bcrypt.hash(req.body.password, 10, (err, hash) => {
                 if (err) {
-                  return res.status(500).json({
-                    error: err,
+                  return res.json({
+                    success: false,
+                    message:
+                      'Oops, something went wrong... please try again later!',
                   });
                 } else {
                   const user = new User(
@@ -189,10 +174,12 @@ exports.register = (req, res, next) => {
                   user
                     .save()
                     .then(() => {
-                      res.status(201).json({
-                        message: 'Your profile was created successfully',
+                      res.json({
+                        success: true,
+                        message: `${user.first_name}, welcome to TryMenu!`,
                         token: token,
                         expiresIn: new Date().getTime() + 10800000,
+                        tutorial: true,
                         user: {
                           _id: user._id,
                           username: user.username,
@@ -205,8 +192,10 @@ exports.register = (req, res, next) => {
                       });
                     })
                     .catch((err) => {
-                      res.status(500).json({
-                        error: err,
+                      res.json({
+                        success: false,
+                        message:
+                          'Oops, something went wrong... please try again later!',
                       });
                     });
                 }
@@ -222,17 +211,16 @@ exports.login = (req, res, next) => {
     .exec()
     .then((user) => {
       if (!user) {
-        return res.status(401).json({
-          message: 'Login failed',
-          action: {
-            changeEmail: true,
-          },
+        return res.json({
+          success: false,
+          message: "Your email or password isn't correct.",
         });
       }
       bcrypt.compare(req.body.password, user.password, (error, result) => {
         if (error) {
-          return res.status(401).json({
-            message: 'Login failed',
+          return res.json({
+            success: false,
+            message: 'Oops, something went wrong... please try again later!',
           });
         }
         if (result) {
@@ -246,9 +234,11 @@ exports.login = (req, res, next) => {
               expiresIn: '3h',
             },
           );
-          return res.status(200).json({
-            message: 'Login successful',
+          return res.json({
+            success: true,
+            message: `${user.first_name}, welcome back to TryMenu!`,
             token: token,
+            expiresIn: new Date().getTime() + 10800000,
             user: {
               _id: user._id,
               username: user.username,
@@ -258,20 +248,18 @@ exports.login = (req, res, next) => {
               cuisine: user.cuisine,
               restaurants: user.restaurants,
             },
-            expiresIn: new Date().getTime() + 10800000,
           });
         }
-        res.status(401).json({
-          message: 'Login failed',
-          action: {
-            changePassword: true,
-          },
+        res.json({
+          success: false,
+          message: "Your email or password isn't correct.",
         });
       });
     })
     .catch((err) => {
-      res.status(401).json({
-        error: err,
+      res.json({
+        success: false,
+        message: 'Oops, something went wrong... please try again later!',
       });
     });
 };
@@ -283,13 +271,16 @@ exports.getSingleUser = (req, res, next) => {
     .exec()
     .then((user) => {
       if (user) {
-        res.status(200).json(user);
+        res.json({ success: true, user });
       } else {
-        res.status(404).json({ message: 'User not found' });
+        res.json({ success: false, message: 'User not found.' });
       }
     })
     .catch((err) => {
-      res.status(500).json({ error: err });
+      res.json({
+        success: false,
+        message: 'Oops, something went wrong... please try again later!',
+      });
     });
 };
 
@@ -297,6 +288,9 @@ exports.updateUser = (req, res, next) => {
   const id = req.params.userId;
   if (req.userData.userId === id) {
     const updatedUser = { ...req.body };
+    if (req.file) {
+      updatedUser['image'] = req.file.path;
+    }
     User.updateOne(
       { _id: id },
       {
@@ -305,18 +299,21 @@ exports.updateUser = (req, res, next) => {
     )
       .exec()
       .then(() => {
-        res.status(200).json({
-          message: 'Your account was successfully updated',
+        res.json({
+          success: true,
+          message: 'Your account was successfully updated.',
         });
       })
       .catch((err) => {
-        err.status(500).json({
-          error: err,
+        res.json({
+          success: false,
+          message: 'Oops, something went wrong... please try again later!',
         });
       });
   } else {
-    res.status(401).json({
-      message: "Can't update this profile",
+    res.json({
+      success: false,
+      message: "Can't update this profile.",
     });
   }
 };
@@ -326,11 +323,15 @@ exports.deleteUser = (req, res, next) => {
   User.deleteOne({ _id: id })
     .exec()
     .then(() => {
-      res
-        .status(200)
-        .json({ message: 'Your account was deleted successfully' });
+      res.json({
+        success: true,
+        message: 'Your account was deleted successfully',
+      });
     })
     .catch((err) => {
-      res.status(500).json({ error: err });
+      res.json({
+        success: false,
+        message: 'Oops, something went wrong... please try again later!',
+      });
     });
 };

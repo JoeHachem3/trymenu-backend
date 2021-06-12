@@ -1,8 +1,7 @@
 const mongoose = require('mongoose');
 const Item = require('../models/item');
 const User = require('../models/user');
-const fs = require('fs');
-const item = require('../models/item');
+// const fs = require('fs');
 
 exports.getRestaurantItems = (req, res, next) => {
   Item.find({ restaurant: req.params.restaurantId })
@@ -40,85 +39,78 @@ exports.getRestaurantItems = (req, res, next) => {
                 }
                 i++;
               }
-              return res.status(200).json({
+              return res.json({
+                success: true,
                 message:
-                  'Make sure to keep your ratings up to date so that recommendations are accurate',
-                items: items,
+                  'Make sure to keep your ratings up to date so that recommendations stay accurate.',
+                items,
               });
             } else {
-              return res.status(200).json({
+              return res.json({
+                success: true,
                 message:
-                  'Give it a try... who knows what could your next meal hold?',
-                items: items,
+                  'Give it a try... who knows what your next meal could hold?',
+                items,
               });
             }
           })
           .catch((err) => {
-            return res.status(200).json({
-              message: "Can't get your rated items now... try again later!",
-              items: items,
+            res.json({
+              success: false,
+              message: 'Oops, something went wrong... please try again later!',
             });
           });
       } else {
-        return res.status(200).json({
-          message: 'Make sure to register to start rating items',
-          items: items,
+        return res.json({
+          success: true,
+          message: 'Make sure to register to start rating items.',
+          items,
         });
       }
     })
     .catch((err) => {
-      res.status(500).json({ err });
+      res.json({
+        success: false,
+        message: 'Oops, something went wrong... please try again later!',
+      });
     });
 };
 
 exports.getAllItems = (req, res, next) => {
   Item.find()
-    .select('_id name image category')
+    .select('_id name restaurant image price category ingredients')
     .exec()
     .then((items) => {
-      const response = {
-        count: items.length,
-        items: items.map((item) => {
-          return {
-            item: {
-              _id: item._id,
-              name: item.name,
-            },
-            request: {
-              type: 'GET',
-              url: 'http://localhost:5000/items/' + item._id,
-            },
-          };
-        }),
-      };
-      res.status(200).json({ response });
+      res.json({ success: true, items });
     })
     .catch((err) => {
-      res.status(500).json({ error: err });
+      res.json({
+        success: false,
+        message: 'Oops, something went wrong... please try again later!',
+      });
     });
 };
 
 exports.createNewItem = (req, res, next) => {
-  const item = new Item(
-    {
-      _id: new mongoose.Types.ObjectId(),
-      ...req.body,
-      image: req.file.path,
-    },
-    { timestamps: true },
-  );
+  const item = new Item({
+    _id: new mongoose.Types.ObjectId(),
+    ...req.body,
+    image: req.file.path,
+  });
   item
     .save()
     .then(() => {
       const tmp = {
         _id: item._id,
         name: item.name,
+        image: item.image,
         price: item.price,
         category: item.category,
-        image: item.image,
+        ingredients: item.ingredients,
       };
-      res.status(201).json({
-        message: 'Your item was created successfully',
+      res.json({
+        success: true,
+        message: 'Your item was created successfully.',
         item: {
           item: tmp,
           rating: 0,
@@ -127,8 +119,9 @@ exports.createNewItem = (req, res, next) => {
       });
     })
     .catch((err) => {
-      res.status(500).json({
-        error: err,
+      res.json({
+        success: false,
+        message: 'Oops, something went wrong... please try again later!',
       });
     });
 };
@@ -136,23 +129,29 @@ exports.createNewItem = (req, res, next) => {
 exports.getSingleItem = (req, res, next) => {
   const id = req.params.itemId;
   Item.findById(id)
-    .select('_id name image category')
+    .select('_id name image price restaurant category ingredients')
     .exec()
     .then((item) => {
       if (item) {
-        res.status(200).json(item);
+        res.json({ success: true, item });
       } else {
-        res.status(404).json({ message: 'Item not found' });
+        res.json({ success: false, message: 'Item not found.' });
       }
     })
     .catch((err) => {
-      res.status(500).json({ error: err });
+      res.json({
+        success: false,
+        message: 'Oops, something went wrong... please try again later!',
+      });
     });
 };
 
 exports.updateItem = (req, res, next) => {
   const id = req.params.itemId;
   const updatedItem = { ...req.body };
+  if (req.file) {
+    updatedItem['image'] = req.file.path;
+  }
   Item.updateOne(
     { _id: id },
     {
@@ -161,17 +160,15 @@ exports.updateItem = (req, res, next) => {
   )
     .exec()
     .then(() => {
-      res.status(200).json({
-        message: 'Your item got successfully updated',
-        request: {
-          type: 'GET',
-          url: 'http://localhost:5000/items/' + id,
-        },
+      res.json({
+        success: true,
+        message: 'Your item got successfully updated.',
       });
     })
     .catch((err) => {
-      err.status(500).json({
-        error: err,
+      res.json({
+        success: false,
+        message: 'Oops, something went wrong... please try again later!',
       });
     });
 };
@@ -181,29 +178,25 @@ exports.deleteItem = (req, res, next) => {
   Item.findOne({ _id: id })
     .exec()
     .then((item) => {
-      Item.findOne({ _id: id })
-        .exec()
-        .then((item) => {
-          const date = new Date();
-          item.deletedAt = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
-          item.save();
-          res
-            .status(200)
-            .json({ message: 'Your item was deleted successfully' });
-          // try {
-          //   const path = item.image.replace(/\/\//, '/').replace(/\\\\/, '/');
-          //   fs.unlinkSync(path);
-          // } catch (err) {
-          //   //sendEmail item image not deleted
-          // }
-        })
-        .catch((err) => {
-          res.status(500).json({ error: err });
-        });
+      const date = new Date();
+      item.deletedAt = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+      item.save();
+      res.json({
+        success: true,
+        message: 'Your item was deleted successfully.',
+      });
+      // try {
+      //   const path = item.image.replace(/\/\//, '/').replace(/\\\\/, '/');
+      //   fs.unlinkSync(path);
+      // } catch (err) {
+      //   //sendEmail item image not deleted
+      // }
     })
-
     .catch((err) => {
-      res.status(500).json({ error: err });
+      res.json({
+        success: false,
+        message: 'Oops, something went wrong... please try again later!',
+      });
     });
 };
 
@@ -240,11 +233,15 @@ exports.deleteItems = (req, res, next) => {
       //       message: 'could not delete items... please try again later!',
       //     });
       //   });
+      res.json({
+        success: true,
+        message: 'Your items were deleted successfully.',
+      });
     })
     .catch((err) => {
-      console.log(err);
-      res
-        .status(400)
-        .json({ message: 'could not delete items... please try again later!' });
+      res.json({
+        success: false,
+        message: 'Oops, something went wrong... please try again later!',
+      });
     });
 };

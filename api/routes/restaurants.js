@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const restaurantsController = require('../controllers/restaurants');
-const checkAuth = require('../middleware/checkAuth');
+const { checkAuth } = require('../middleware/authVerification');
 const multer = require('multer');
 
 const storage = multer.diskStorage({
@@ -32,6 +32,12 @@ const upload = multer({
   fileFilter: fileFilter,
 });
 
+// getFilteredRestaurantsByCuisine
+router.get(
+  '/cuisine',
+  checkAuth,
+  restaurantsController.getFilteredRestaurantsByCuisine,
+);
 // getAllRestaurants
 router.get('/', restaurantsController.getAllRestaurants);
 // createNewRestaurant
