@@ -1,41 +1,50 @@
 const Restaurant = require('../models/restaurant');
+const User = require('../models/user');
 const Item = require('../models/item');
 const mongoose = require('mongoose');
+const serverError = require('../../utils/serverError');
 // const fs = require('fs');
 
 exports.getFilteredRestaurantsByCuisine = (req, res, next) => {
-  const { cuisine } = req.body;
-  if (!cuisine.length) {
-    this.getAllRestaurants(req, res, next);
-  } else {
-    const tmp = cuisine.map((c) => {
-      return { cuisine: c };
-    });
-
-    Restaurant.find({ $or: tmp })
-      .select('_id owner name logo phone email location category cuisine')
-      .exec()
-      .then((recommended) => {
-        Restaurant.find({ $not: tmp })
+  const { userId } = req.userData;
+  User.findById(userId)
+    .exec()
+    .then((user) => {
+      const cuisine = user.cuisine;
+      if (!cuisine.length) {
+        this.getAllRestaurants(req, res, next);
+      } else {
+        const tmp = cuisine.map((c) => {
+          return { cuisine: c };
+        });
+        Restaurant.find({ $or: tmp })
           .select('_id owner name logo phone email location category cuisine')
           .exec()
-          .then((restaurants) => {
-            res.json({ success: true, recommended, restaurants });
+          .then((recommended) => {
+            Restaurant.find({ $not: tmp })
+              .select(
+                '_id owner name logo phone email location category cuisine',
+              )
+              .exec()
+              .then((restaurants) => {
+                recommended.forEach((resto) => {
+                  resto.byCuisine = true;
+                  restaurants.push(resto);
+                });
+                res.json({ success: true, restaurants });
+              })
+              .catch((error) => {
+                serverError(res, error);
+              });
           })
-          .catch((err) => {
-            res.json({
-              success: false,
-              message: 'Oops, something went wrong... please try again later!',
-            });
+          .catch((error) => {
+            serverError(res, error);
           });
-      })
-      .catch((err) => {
-        res.json({
-          success: false,
-          message: 'Oops, something went wrong... please try again later!',
-        });
-      });
-  }
+      }
+    })
+    .catch((error) => {
+      serverError(res, error);
+    });
 };
 
 exports.getAllRestaurants = (req, res, next) => {
@@ -45,11 +54,8 @@ exports.getAllRestaurants = (req, res, next) => {
     .then((restaurants) => {
       res.json({ success: true, restaurants });
     })
-    .catch((err) => {
-      res.json({
-        success: false,
-        message: 'Oops, something went wrong... please try again later!',
-      });
+    .catch((error) => {
+      serverError(res, error);
     });
 };
 
@@ -70,11 +76,8 @@ exports.createNewRestaurant = (req, res, next) => {
         restaurant,
       });
     })
-    .catch((err) => {
-      res.json({
-        success: false,
-        message: 'Oops, something went wrong... please try again later!',
-      });
+    .catch((error) => {
+      serverError(res, error);
     });
 };
 
@@ -90,11 +93,8 @@ exports.getSingleRestaurants = (req, res, next) => {
         res.json({ success: false, message: 'Restaurant not found.' });
       }
     })
-    .catch((err) => {
-      res.json({
-        success: false,
-        message: 'Oops, something went wrong... please try again later!',
-      });
+    .catch((error) => {
+      serverError(res, error);
     });
 };
 
@@ -117,11 +117,8 @@ exports.updateRestaurant = (req, res, next) => {
         message: 'Your restaurant updated successfully.',
       });
     })
-    .catch((err) => {
-      res.json({
-        success: false,
-        message: 'Oops, something went wrong... please try again later!',
-      });
+    .catch((error) => {
+      serverError(res, error);
     });
 };
 
@@ -181,19 +178,12 @@ exports.deleteRestaurant = (req, res, next) => {
                 //     // sendEmail items not deleted
               });
             })
-            .catch((err) => {
-              res.json({
-                success: false,
-                message:
-                  'Oops, something went wrong... please try again later!',
-              });
+            .catch((error) => {
+              serverError(res, error);
             });
         })
-        .catch((err) => {
-          res.json({
-            success: false,
-            message: 'Oops, something went wrong... please try again later!',
-          });
+        .catch((error) => {
+          serverError(res, error);
         });
     });
 };

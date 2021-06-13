@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const Item = require('../models/item');
 const User = require('../models/user');
+const serverError = require('../../utils/serverError');
 // const fs = require('fs');
 
 exports.getRestaurantItems = (req, res, next) => {
@@ -54,11 +55,8 @@ exports.getRestaurantItems = (req, res, next) => {
               });
             }
           })
-          .catch((err) => {
-            res.json({
-              success: false,
-              message: 'Oops, something went wrong... please try again later!',
-            });
+          .catch((error) => {
+            serverError(res, error);
           });
       } else {
         return res.json({
@@ -68,11 +66,8 @@ exports.getRestaurantItems = (req, res, next) => {
         });
       }
     })
-    .catch((err) => {
-      res.json({
-        success: false,
-        message: 'Oops, something went wrong... please try again later!',
-      });
+    .catch((error) => {
+      serverError(res, error);
     });
 };
 
@@ -83,11 +78,8 @@ exports.getAllItems = (req, res, next) => {
     .then((items) => {
       res.json({ success: true, items });
     })
-    .catch((err) => {
-      res.json({
-        success: false,
-        message: 'Oops, something went wrong... please try again later!',
-      });
+    .catch((error) => {
+      serverError(res, error);
     });
 };
 
@@ -118,11 +110,8 @@ exports.createNewItem = (req, res, next) => {
         },
       });
     })
-    .catch((err) => {
-      res.json({
-        success: false,
-        message: 'Oops, something went wrong... please try again later!',
-      });
+    .catch((error) => {
+      serverError(res, error);
     });
 };
 
@@ -138,11 +127,8 @@ exports.getSingleItem = (req, res, next) => {
         res.json({ success: false, message: 'Item not found.' });
       }
     })
-    .catch((err) => {
-      res.json({
-        success: false,
-        message: 'Oops, something went wrong... please try again later!',
-      });
+    .catch((error) => {
+      serverError(res, error);
     });
 };
 
@@ -165,11 +151,8 @@ exports.updateItem = (req, res, next) => {
         message: 'Your item got successfully updated.',
       });
     })
-    .catch((err) => {
-      res.json({
-        success: false,
-        message: 'Oops, something went wrong... please try again later!',
-      });
+    .catch((error) => {
+      serverError(res, error);
     });
 };
 
@@ -188,15 +171,12 @@ exports.deleteItem = (req, res, next) => {
       // try {
       //   const path = item.image.replace(/\/\//, '/').replace(/\\\\/, '/');
       //   fs.unlinkSync(path);
-      // } catch (err) {
+      // } catch (error) {
       //   //sendEmail item image not deleted
       // }
     })
-    .catch((err) => {
-      res.json({
-        success: false,
-        message: 'Oops, something went wrong... please try again later!',
-      });
+    .catch((error) => {
+      serverError(res, error);
     });
 };
 
@@ -213,7 +193,7 @@ exports.deleteItems = (req, res, next) => {
         //   try {
         //     const path = item.image.replace(/\/\//, '/').replace(/\\\\/, '/');
         //     fs.unlinkSync(path);
-        //   } catch (err) {
+        //   } catch (error) {
         //     //sendEmail item image not deleted
         //   }
 
@@ -227,8 +207,8 @@ exports.deleteItems = (req, res, next) => {
       //     console.log(result);
       //     res.status(204).json({ message: 'items deleted successfully' });
       //   })
-      //   .catch((err) => {
-      //     console.log(err);
+      //   .catch((error) => {
+      //     console.log(error);
       //     res.status(400).json({
       //       message: 'could not delete items... please try again later!',
       //     });
@@ -238,10 +218,7 @@ exports.deleteItems = (req, res, next) => {
         message: 'Your items were deleted successfully.',
       });
     })
-    .catch((err) => {
-      res.json({
-        success: false,
-        message: 'Oops, something went wrong... please try again later!',
-      });
+    .catch((error) => {
+      serverError(res, error);
     });
 };

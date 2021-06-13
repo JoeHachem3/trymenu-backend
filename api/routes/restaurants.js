@@ -1,7 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const restaurantsController = require('../controllers/restaurants');
-const { checkAuth } = require('../middleware/authVerification');
+const {
+  checkSuperAdmin,
+  checkAdmin,
+  checkCustomer,
+} = require('../middleware/authVerification');
 const multer = require('multer');
 
 const storage = multer.diskStorage({
@@ -35,7 +39,7 @@ const upload = multer({
 // getFilteredRestaurantsByCuisine
 router.get(
   '/cuisine',
-  checkAuth,
+  checkCustomer,
   restaurantsController.getFilteredRestaurantsByCuisine,
 );
 // getAllRestaurants
@@ -43,7 +47,7 @@ router.get('/', restaurantsController.getAllRestaurants);
 // createNewRestaurant
 router.post(
   '/',
-  checkAuth,
+  checkSuperAdmin,
   upload.single('logo'),
   restaurantsController.createNewRestaurant,
 );
@@ -52,14 +56,14 @@ router.get('/:restaurantId', restaurantsController.getSingleRestaurants);
 // updateRestaurant
 router.patch(
   '/:restaurantId',
-  checkAuth,
+  checkAdmin,
   upload.single('logo'),
   restaurantsController.updateRestaurant,
 );
 // deleteRestaurant
 router.delete(
   '/:restaurantId',
-  checkAuth,
+  checkSuperAdmin,
   restaurantsController.deleteRestaurant,
 );
 

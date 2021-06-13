@@ -1,5 +1,6 @@
 const User = require('../models/user');
 const mongoose = require('mongoose');
+const serverError = require('../../utils/serverError');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const config = require('../../config');
@@ -67,10 +68,7 @@ exports.updateRatings = (req, res, next) => {
       });
     })
     .catch((error) => {
-      res.json({
-        success: false,
-        message: 'Oops, something went wrong... please try again later!',
-      });
+      serverError(res, error);
     });
 };
 
@@ -104,25 +102,21 @@ exports.getRecommendedItems = (req, res, next) => {
         });
     })
     .catch((error) => {
-      res.json({
-        success: false,
-        message: 'Oops, something went wrong... please try again later!',
-      });
+      serverError(res, error);
     });
 };
 
 exports.getAllUsers = (req, res, next) => {
   User.find({ _id: { $ne: req.userData.userId } })
-    .select('_id username first_name last_name email cuisine restaurants')
+    .select(
+      '_id username userType first_name last_name email cuisine restaurants',
+    )
     .exec()
     .then((users) => {
       res.json({ success: true, users });
     })
-    .catch((err) => {
-      res.json({
-        success: false,
-        message: 'Oops, something went wrong... please try again later!',
-      });
+    .catch((error) => {
+      serverError(res, error);
     });
 };
 
@@ -145,26 +139,23 @@ exports.register = (req, res, next) => {
                 message: 'Username already exists',
               });
             } else {
-              bcrypt.hash(req.body.password, 10, (err, hash) => {
-                if (err) {
-                  return res.json({
-                    success: false,
-                    message:
-                      'Oops, something went wrong... please try again later!',
-                  });
+              bcrypt.hash(req.body.password, 10, (error, hash) => {
+                if (error) {
+                  serverError(res, error);
                 } else {
-                  const user = new User(
-                    {
-                      _id: new mongoose.Types.ObjectId(),
-                      ...req.body,
-                      password: hash,
-                    },
-                    { timestamps: true },
-                  );
+                  const user = new User({
+                    _id: new mongoose.Types.ObjectId(),
+                    ...req.body,
+                    password: hash,
+                    userType: req.body.userType
+                      ? req.body.userType
+                      : 'customer',
+                  });
                   const token = jwt.sign(
                     {
                       email: user.email,
                       userId: user._id,
+                      userType: user.userType,
                     },
                     config.JWT_KEY,
                     {
@@ -179,24 +170,21 @@ exports.register = (req, res, next) => {
                         message: `${user.first_name}, welcome to TryMenu!`,
                         token: token,
                         expiresIn: new Date().getTime() + 10800000,
-                        tutorial: true,
                         user: {
+                          tutorial: true,
                           _id: user._id,
                           username: user.username,
                           first_name: user.first_name,
                           last_name: user.last_name,
+                          userType: user.userType,
                           email: user.email,
                           cuisine: user.cuisine,
                           restaurants: user.restaurants,
                         },
                       });
                     })
-                    .catch((err) => {
-                      res.json({
-                        success: false,
-                        message:
-                          'Oops, something went wrong... please try again later!',
-                      });
+                    .catch((error) => {
+                      serverError(res, error);
                     });
                 }
               });
@@ -216,18 +204,20 @@ exports.login = (req, res, next) => {
           message: "Your email or password isn't correct.",
         });
       }
+      if (!user.userType) {
+        user.userType = 'customer';
+        user.save();
+      }
       bcrypt.compare(req.body.password, user.password, (error, result) => {
         if (error) {
-          return res.json({
-            success: false,
-            message: 'Oops, something went wrong... please try again later!',
-          });
+          serverError(res, error);
         }
         if (result) {
           const token = jwt.sign(
             {
               email: user.email,
               userId: user._id,
+              userType: user.userType,
             },
             config.JWT_KEY,
             {
@@ -242,6 +232,7 @@ exports.login = (req, res, next) => {
             user: {
               _id: user._id,
               username: user.username,
+              userType: user.userType,
               first_name: user.first_name,
               last_name: user.last_name,
               email: user.email,
@@ -256,18 +247,17 @@ exports.login = (req, res, next) => {
         });
       });
     })
-    .catch((err) => {
-      res.json({
-        success: false,
-        message: 'Oops, something went wrong... please try again later!',
-      });
+    .catch((error) => {
+      serverError(res, error);
     });
 };
 
 exports.getSingleUser = (req, res, next) => {
   const id = req.params.userId;
   User.findById(id)
-    .select('_id username first_name last_name email cuisine restaurants')
+    .select(
+      '_id username userType first_name last_name email cuisine restaurants',
+    )
     .exec()
     .then((user) => {
       if (user) {
@@ -276,11 +266,8 @@ exports.getSingleUser = (req, res, next) => {
         res.json({ success: false, message: 'User not found.' });
       }
     })
-    .catch((err) => {
-      res.json({
-        success: false,
-        message: 'Oops, something went wrong... please try again later!',
-      });
+    .catch((error) => {
+      serverError(res, error);
     });
 };
 
@@ -304,11 +291,8 @@ exports.updateUser = (req, res, next) => {
           message: 'Your account was successfully updated.',
         });
       })
-      .catch((err) => {
-        res.json({
-          success: false,
-          message: 'Oops, something went wrong... please try again later!',
-        });
+      .catch((error) => {
+        serverError(res, error);
       });
   } else {
     res.json({
@@ -328,10 +312,7 @@ exports.deleteUser = (req, res, next) => {
         message: 'Your account was deleted successfully',
       });
     })
-    .catch((err) => {
-      res.json({
-        success: false,
-        message: 'Oops, something went wrong... please try again later!',
-      });
+    .catch((error) => {
+      serverError(res, error);
     });
 };

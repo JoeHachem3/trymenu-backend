@@ -2,8 +2,8 @@ const express = require('express');
 const router = express.Router();
 const itemsController = require('../controllers/items');
 const {
-  checkAuth,
   differentiateAuth,
+  checkAdmin,
 } = require('../middleware/authVerification');
 const multer = require('multer');
 
@@ -45,17 +45,17 @@ router.get('/', itemsController.getAllItems);
 // createNewItem
 router.post(
   '/',
-  checkAuth,
+  checkAdmin,
   upload.single('image'),
   itemsController.createNewItem,
 );
 // getSingleItem
 router.get('/:itemId', itemsController.getSingleItem);
 // updateItem
-router.patch('/:itemId', checkAuth, itemsController.updateItem);
+router.patch('/:itemId', checkAdmin, itemsController.updateItem);
 // deleteItem
-router.delete('/:itemId', checkAuth, itemsController.deleteItem);
+router.delete('/:itemId', checkAdmin, itemsController.deleteItem);
 //deleteItems
-router.post('/delete', checkAuth, itemsController.deleteItems);
+router.post('/delete', checkAdmin, itemsController.deleteItems);
 
 module.exports = router;

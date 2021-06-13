@@ -1,6 +1,10 @@
 const express = require('express');
 const router = express.Router();
-const { checkAuth } = require('../middleware/authVerification');
+const {
+  checkAuth,
+  checkAdmin,
+  checkCustomer,
+} = require('../middleware/authVerification');
 const usersController = require('../controllers/users');
 const multer = require('multer');
 
@@ -33,9 +37,9 @@ const upload = multer({
 });
 
 // updateRatings
-router.patch('/rating', checkAuth, usersController.updateRatings);
+router.patch('/rating', checkCustomer, usersController.updateRatings);
 // getRecommendedItems
-router.post('/cf-items', checkAuth, usersController.getRecommendedItems);
+router.post('/cf-items', checkCustomer, usersController.getRecommendedItems);
 // getAllUsers
 router.get('/', checkAuth, usersController.getAllUsers);
 // register
