@@ -36,6 +36,8 @@ const upload = multer({
   fileFilter: fileFilter,
 });
 
+// getRestaurantsByOwner
+router.get('/owner', checkAdmin, restaurantsController.getRestaurantsByOwner);
 // getFilteredRestaurantsByCuisine
 router.get(
   '/cuisine',

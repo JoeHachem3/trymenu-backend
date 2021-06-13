@@ -5,6 +5,18 @@ const mongoose = require('mongoose');
 const serverError = require('../../utils/serverError');
 // const fs = require('fs');
 
+exports.getRestaurantsByOwner = (req, res, next) => {
+  const { userId } = req.userData;
+  Restaurant.find({ owner: userId })
+    .select('_id owner name logo phone email location category cuisine')
+    .exec()
+    .then((restaurants) => {
+      res
+        .json({ success: false, restaurants })
+        .catch((error) => serverError(res, error));
+    });
+};
+
 exports.getFilteredRestaurantsByCuisine = (req, res, next) => {
   const { userId } = req.userData;
   User.findById(userId)
