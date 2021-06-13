@@ -17,19 +17,31 @@ exports.getFilteredRestaurantsByCuisine = (req, res, next) => {
         const tmp = cuisine.map((c) => {
           return { cuisine: c };
         });
+
         Restaurant.find({ $or: tmp })
           .select('_id owner name logo phone email location category cuisine')
           .exec()
           .then((recommended) => {
-            Restaurant.find({ $not: tmp })
+            Restaurant.find({ cuisine: { $nin: cuisine } })
               .select(
                 '_id owner name logo phone email location category cuisine',
               )
               .exec()
               .then((restaurants) => {
                 recommended.forEach((resto) => {
-                  resto.byCuisine = true;
-                  restaurants.push(resto);
+                  const tmp = {
+                    category: resto.category,
+                    cuisine: resto.cuisine,
+                    email: resto.email,
+                    location: resto.location,
+                    logo: resto.logo,
+                    name: resto.name,
+                    owner: resto.owner,
+                    phone: resto.phone,
+                    _id: resto._id,
+                    byCuisine: true,
+                  };
+                  restaurants.push(tmp);
                 });
                 res.json({ success: true, restaurants });
               })
