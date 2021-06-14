@@ -210,3 +210,28 @@ exports.deleteRestaurant = (req, res, next) => {
         });
     });
 };
+
+exports.dev = (req, res, next) => {
+  const restaurant = new Restaurant({
+    _id: new mongoose.Types.ObjectId(),
+    name: req.body.name,
+    email: req.body.email,
+    logo: req.body.logo,
+    phone: req.body.phone,
+    location: [],
+  });
+
+  restaurant
+    .save()
+    .then(() => {
+      console.log('test');
+      res.json({
+        success: true,
+        message: 'Your restaurant was created successfully.',
+        restaurant,
+      });
+    })
+    .catch((error) => {
+      serverError(res, error);
+    });
+};
