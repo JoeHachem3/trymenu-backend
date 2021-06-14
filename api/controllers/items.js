@@ -1,25 +1,23 @@
 const mongoose = require('mongoose');
 const Item = require('../models/item');
 const User = require('../models/user');
+const Restaurant = require('../models/restaurant');
 const serverError = require('../../utils/serverError');
 // const fs = require('fs');
 
 exports.addItemsDev = (req, res, next) => {
-  const items = req.body.items;
-  if (items) {
-    items.forEach((i) => {
-      const item = new Item({
-        _id: new mongoose.Types.ObjectId(),
-        ...i,
-      });
-      item.save();
+  Restaurant.find()
+    .exec()
+    .then((restaurants) => {
+      for (let i = 0; i < 5; i++) {
+        restaurants[i].owner = '60c7b89417bd29bbbe76d421';
+        restaurants[i].save();
+      }
+      for (let i = 5; i < 10; i++) {
+        restaurants[i].owner = '60c7b91755be854bace6c501';
+        restaurants[i].save();
+      }
     });
-    return res.json({ success: true, message: 'backend/uploads/items/' });
-  }
-  return res.json({
-    success: false,
-    message: 'make sure your object looks like this: {"items": [{}, {},...]}',
-  });
 };
 
 exports.getRestaurantItems = (req, res, next) => {

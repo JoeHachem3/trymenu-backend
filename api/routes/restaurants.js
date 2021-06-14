@@ -68,6 +68,5 @@ router.delete(
   checkSuperAdmin,
   restaurantsController.deleteRestaurant,
 );
-router.post('/dev', restaurantsController.dev);
 
 module.exports = router;

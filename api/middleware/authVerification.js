@@ -40,7 +40,7 @@ exports.checkAdmin = (req, res, next) => {
   try {
     const token = req.headers.authorization.split(' ')[1];
     const decoded = jwt.verify(token, config.JWT_KEY);
-    if (decoded.userType === 'admin') {
+    if (decoded.userType !== 'customer') {
       req.userData = decoded;
       next();
     } else {
