@@ -21,7 +21,7 @@ const restaurantSchema = mongoose.Schema(
       trim: true,
       enum: restaurantCategories,
     },
-    cuisine: [
+    cuisines: [
       {
         type: String,
         lowercase: true,

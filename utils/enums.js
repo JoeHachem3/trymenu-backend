@@ -41,7 +41,6 @@ exports.cuisines = [
   'Creole',
   'Crepes',
   'Cuban',
-  'Cuban',
   'Czech',
   'Deli',
   'Dim Sum',

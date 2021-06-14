@@ -30,7 +30,7 @@ const userSchema = mongoose.Schema(
       enum: userTypes,
       default: 'customer',
     },
-    cuisine: [
+    cuisines: [
       {
         type: String,
         lowercase: true,

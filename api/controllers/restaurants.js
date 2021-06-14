@@ -8,13 +8,12 @@ const serverError = require('../../utils/serverError');
 exports.getRestaurantsByOwner = (req, res, next) => {
   const { userId } = req.userData;
   Restaurant.find({ owner: userId })
-    .select('_id owner name logo phone email location category cuisine')
+    .select('_id owner name logo phone email location category cuisines')
     .exec()
     .then((restaurants) => {
-      res
-        .json({ success: false, restaurants })
-        .catch((error) => serverError(res, error));
-    });
+      res.json({ success: true, restaurants });
+    })
+    .catch((error) => serverError(res, error));
 };
 
 exports.getFilteredRestaurantsByCuisine = (req, res, next) => {
@@ -22,28 +21,28 @@ exports.getFilteredRestaurantsByCuisine = (req, res, next) => {
   User.findById(userId)
     .exec()
     .then((user) => {
-      const cuisine = user.cuisine;
-      if (!cuisine.length) {
+      const cuisines = user.cuisines;
+      if (!cuisines.length) {
         this.getAllRestaurants(req, res, next);
       } else {
-        const tmp = cuisine.map((c) => {
-          return { cuisine: c };
+        const tmp = cuisines.map((c) => {
+          return { cuisines: c };
         });
 
         Restaurant.find({ $or: tmp })
-          .select('_id owner name logo phone email location category cuisine')
+          .select('_id owner name logo phone email location category cuisines')
           .exec()
           .then((recommended) => {
-            Restaurant.find({ cuisine: { $nin: cuisine } })
+            Restaurant.find({ cuisines: { $nin: cuisines } })
               .select(
-                '_id owner name logo phone email location category cuisine',
+                '_id owner name logo phone email location category cuisines',
               )
               .exec()
               .then((restaurants) => {
                 recommended.forEach((resto) => {
                   const tmp = {
                     category: resto.category,
-                    cuisine: resto.cuisine,
+                    cuisines: resto.cuisines,
                     email: resto.email,
                     location: resto.location,
                     logo: resto.logo,
@@ -73,7 +72,7 @@ exports.getFilteredRestaurantsByCuisine = (req, res, next) => {
 
 exports.getAllRestaurants = (req, res, next) => {
   Restaurant.find()
-    .select('_id owner name logo phone email location category cuisine')
+    .select('_id owner name logo phone email location category cuisines')
     .exec()
     .then((restaurants) => {
       res.json({ success: true, restaurants });
@@ -108,7 +107,7 @@ exports.createNewRestaurant = (req, res, next) => {
 exports.getSingleRestaurants = (req, res, next) => {
   const id = req.params.restaurantId;
   Restaurant.findById(id)
-    .select('_id owner name logo phone email location category cuisine')
+    .select('_id owner name logo phone email location category cuisines')
     .exec()
     .then((restaurant) => {
       if (restaurant) {

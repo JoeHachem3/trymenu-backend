@@ -34,6 +34,9 @@ const upload = multer({
   },
   fileFilter: fileFilter,
 });
+
+//addItemsDev
+router.post('/dev', itemsController.addItemsDev);
 // getRestaurantItems
 router.get(
   '/:restaurantId',

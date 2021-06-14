@@ -109,7 +109,7 @@ exports.getRecommendedItems = (req, res, next) => {
 exports.getAllUsers = (req, res, next) => {
   User.find({ _id: { $ne: req.userData.userId } })
     .select(
-      '_id username userType first_name last_name email cuisine restaurants',
+      '_id username userType first_name last_name email cuisines restaurants',
     )
     .exec()
     .then((users) => {
@@ -178,7 +178,7 @@ exports.register = (req, res, next) => {
                           last_name: user.last_name,
                           userType: user.userType,
                           email: user.email,
-                          cuisine: user.cuisine,
+                          cuisines: user.cuisines,
                           restaurants: user.restaurants,
                         },
                       });
@@ -236,7 +236,7 @@ exports.login = (req, res, next) => {
               first_name: user.first_name,
               last_name: user.last_name,
               email: user.email,
-              cuisine: user.cuisine,
+              cuisines: user.cuisines,
               restaurants: user.restaurants,
             },
           });
@@ -256,12 +256,15 @@ exports.getSingleUser = (req, res, next) => {
   const id = req.params.userId;
   User.findById(id)
     .select(
-      '_id username userType first_name last_name email cuisine restaurants',
+      '_id username userType first_name last_name email cuisines restaurants',
     )
     .exec()
     .then((user) => {
       if (user) {
-        res.json({ success: true, user });
+        res.json({
+          success: true,
+          user,
+        });
       } else {
         res.json({ success: false, message: 'User not found.' });
       }
@@ -275,6 +278,7 @@ exports.updateUser = (req, res, next) => {
   const id = req.params.userId;
   if (req.userData.userId === id) {
     const updatedUser = { ...req.body };
+
     if (req.file) {
       updatedUser['image'] = req.file.path;
     }

@@ -7,6 +7,7 @@ const config = require('./config');
 const userRoutes = require('./api/routes/users');
 const restaurantRoutes = require('./api/routes/restaurants');
 const itemRoutes = require('./api/routes/items');
+const utilitiesRoutes = require('./api/routes/utilities');
 
 mongoose.connect(
   'mongodb+srv://admin:' +
@@ -41,6 +42,7 @@ app.use((req, res, next) => {
 app.use('/users', userRoutes);
 app.use('/restaurants', restaurantRoutes);
 app.use('/items', itemRoutes);
+app.use('/', utilitiesRoutes);
 
 app.use((req, res, next) => {
   const error = new Error('Not found');

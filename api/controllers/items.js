@@ -4,6 +4,24 @@ const User = require('../models/user');
 const serverError = require('../../utils/serverError');
 // const fs = require('fs');
 
+exports.addItemsDev = (req, res, next) => {
+  const items = req.body.items;
+  if (items) {
+    items.forEach((i) => {
+      const item = new Item({
+        _id: new mongoose.Types.ObjectId(),
+        ...i,
+      });
+      item.save();
+    });
+    return res.json({ success: true, message: 'backend/uploads/items/' });
+  }
+  return res.json({
+    success: false,
+    message: 'make sure your object looks like this: {"items": [{}, {},...]}',
+  });
+};
+
 exports.getRestaurantItems = (req, res, next) => {
   Item.find({ restaurant: req.params.restaurantId })
     .select('_id name price image category ingredients')
@@ -13,51 +31,58 @@ exports.getRestaurantItems = (req, res, next) => {
         return { item, rating: 0, prevRating: null };
       });
       if (req.userData) {
-        User.findOne({ _id: req.userData.userId })
-          .select('restaurants')
-          .exec()
-          .then((user) => {
-            let counter = 0;
-            const restaurant = user.restaurants.find(
-              (resto) => resto._id.toString() === req.params.restaurantId,
-            );
-            if (restaurant) {
-              let i = 0;
-              while (
-                i < items.length &&
-                counter < restaurant.ratedItems.length
-              ) {
-                const ratedItem = restaurant.ratedItems.find(
-                  (item) =>
-                    item._id.toString() === items[i].item._id.toString(),
-                );
-                if (ratedItem) {
-                  counter++;
-                  items[i].rating = ratedItem.rating;
-                  if (ratedItem.prevRating !== null) {
-                    items[i].prevRating = ratedItem.prevRating;
+        if (req.userData.userType === 'customer') {
+          User.findOne({ _id: req.userData.userId })
+            .select('restaurants')
+            .exec()
+            .then((user) => {
+              let counter = 0;
+              const restaurant = user.restaurants.find(
+                (resto) => resto._id.toString() === req.params.restaurantId,
+              );
+              if (restaurant) {
+                let i = 0;
+                while (
+                  i < items.length &&
+                  counter < restaurant.ratedItems.length
+                ) {
+                  const ratedItem = restaurant.ratedItems.find(
+                    (item) =>
+                      item._id.toString() === items[i].item._id.toString(),
+                  );
+                  if (ratedItem) {
+                    counter++;
+                    items[i].rating = ratedItem.rating;
+                    if (ratedItem.prevRating !== null) {
+                      items[i].prevRating = ratedItem.prevRating;
+                    }
                   }
+                  i++;
                 }
-                i++;
+                return res.json({
+                  success: true,
+                  message:
+                    'Make sure to keep your ratings up to date so that recommendations stay accurate.',
+                  items,
+                });
+              } else {
+                return res.json({
+                  success: true,
+                  message:
+                    'Give it a try... who knows what your next meal could hold?',
+                  items,
+                });
               }
-              return res.json({
-                success: true,
-                message:
-                  'Make sure to keep your ratings up to date so that recommendations stay accurate.',
-                items,
-              });
-            } else {
-              return res.json({
-                success: true,
-                message:
-                  'Give it a try... who knows what your next meal could hold?',
-                items,
-              });
-            }
-          })
-          .catch((error) => {
-            serverError(res, error);
+            })
+            .catch((error) => {
+              serverError(res, error);
+            });
+        } else {
+          return res.json({
+            success: true,
+            items,
           });
+        }
       } else {
         return res.json({
           success: true,
