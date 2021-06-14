@@ -24,7 +24,7 @@ exports.addItemsDev = (req, res, next) => {
 
 exports.getRestaurantItems = (req, res, next) => {
   Item.find({ restaurant: req.params.restaurantId })
-    .select('_id name price image category ingredients')
+    .select('_id name price image category ingredients deletedAt')
     .exec()
     .then((items) => {
       items = items.map((item) => {
