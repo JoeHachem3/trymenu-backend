@@ -121,7 +121,7 @@ exports.getAllUsers = (req, res, next) => {
 };
 
 exports.register = (req, res, next) => {
-  User.find({ email: req.body.email.toLowercase() })
+  User.find({ email: req.body.email })
     .exec()
     .then((user) => {
       if (user.length > 0) {
@@ -153,7 +153,7 @@ exports.register = (req, res, next) => {
                   });
                   const token = jwt.sign(
                     {
-                      email: user.email.toLowercase(),
+                      email: user.email,
                       userId: user._id,
                       userType: user.userType,
                     },
@@ -177,7 +177,7 @@ exports.register = (req, res, next) => {
                           first_name: user.first_name,
                           last_name: user.last_name,
                           userType: user.userType,
-                          email: user.email.toLowercase(),
+                          email: user.email,
                           cuisines: user.cuisines,
                           restaurants: user.restaurants,
                         },
@@ -195,7 +195,7 @@ exports.register = (req, res, next) => {
 };
 
 exports.login = (req, res, next) => {
-  User.findOne({ email: req.body.email.toLowercase() })
+  User.findOne({ email: req.body.email })
     .exec()
     .then((user) => {
       if (!user) {
@@ -215,7 +215,7 @@ exports.login = (req, res, next) => {
         if (result) {
           const token = jwt.sign(
             {
-              email: user.email.toLowercase(),
+              email: user.email,
               userId: user._id,
               userType: user.userType,
             },
@@ -235,7 +235,7 @@ exports.login = (req, res, next) => {
               userType: user.userType,
               first_name: user.first_name,
               last_name: user.last_name,
-              email: user.email.toLowercase(),
+              email: user.email,
               cuisines: user.cuisines,
               restaurants: user.restaurants,
             },
