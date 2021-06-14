@@ -41,6 +41,7 @@ exports.getFilteredRestaurantsByCuisine = (req, res, next) => {
               .exec()
               .then((restaurants) => {
                 recommended.forEach((resto) => {
+                  console.log('yey');
                   const tmp = {
                     category: resto.category,
                     cuisines: resto.cuisines,
