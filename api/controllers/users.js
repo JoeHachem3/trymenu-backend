@@ -89,12 +89,12 @@ exports.getRecommendedItems = (req, res, next) => {
             recommendedItems = collaborativeFiltering.recommendedItems(
               mainUser,
               users,
-              req.body.restaurantId,
+              req.body.restaurantId
             );
           } else {
             recommendedItems = collaborativeFiltering.allRecommendedItems(
               mainUser,
-              users,
+              users
             );
           }
 
@@ -109,7 +109,7 @@ exports.getRecommendedItems = (req, res, next) => {
 exports.getAllUsers = (req, res, next) => {
   User.find({ _id: { $ne: req.userData.userId } })
     .select(
-      '_id username userType first_name last_name email cuisines restaurants',
+      '_id username userType first_name last_name email cuisines restaurants'
     )
     .exec()
     .then((users) => {
@@ -160,7 +160,7 @@ exports.register = (req, res, next) => {
                     config.JWT_KEY,
                     {
                       expiresIn: '3h',
-                    },
+                    }
                   );
                   user
                     .save()
@@ -195,6 +195,7 @@ exports.register = (req, res, next) => {
 };
 
 exports.login = (req, res, next) => {
+  console.log('here');
   User.findOne({ email: req.body.email })
     .exec()
     .then((user) => {
@@ -222,7 +223,7 @@ exports.login = (req, res, next) => {
             config.JWT_KEY,
             {
               expiresIn: '3h',
-            },
+            }
           );
           return res.json({
             success: true,
@@ -256,7 +257,7 @@ exports.getSingleUser = (req, res, next) => {
   const id = req.params.userId;
   User.findById(id)
     .select(
-      '_id username userType first_name last_name email cuisines restaurants',
+      '_id username userType first_name last_name email cuisines restaurants'
     )
     .exec()
     .then((user) => {
@@ -286,7 +287,7 @@ exports.updateUser = (req, res, next) => {
       { _id: id },
       {
         $set: updatedUser,
-      },
+      }
     )
       .exec()
       .then(() => {

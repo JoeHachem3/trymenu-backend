@@ -1,4 +1,6 @@
+require('dotenv').config();
+
 module.exports = {
-  JWT_KEY: 'laknsdcja9w',
-  MONGO_ATLAS_PW: 'adminPassword',
+  JWT_KEY: process.env.JWT_KEY,
+  MONGO_ATLAS_PW: process.env.MONGO_ATLAS_PW,
 };
